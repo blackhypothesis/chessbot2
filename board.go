@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/tebeka/selenium"
 )
@@ -16,6 +16,8 @@ type Board struct {
 	active_color   string
 	move_list      []string
 	board          [8][8]Piece
+	board_size_x   int
+	board_size_y   int
 }
 
 type Piece struct {
@@ -25,6 +27,7 @@ type Piece struct {
 
 func GetBoard(driver selenium.WebDriver) (Board, error) {
 	board := Board{}
+	time.Sleep(1 * time.Second)
 	cg_container, err := driver.FindElement(selenium.ByTagName, "cg-container")
 	if err != nil {
 		return Board{}, err
@@ -55,20 +58,20 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 	}
 	pattern := regexp.MustCompile(`width: (?P<x_size>\d+)px; height: (?P<y_size>\d+)px;`)
 	board_size := pattern.FindStringSubmatch(board_size_string)
-	board_x_size := board_size[1]
-	board_y_size := board_size[2]
-	field_x_size, err := strconv.Atoi(board_x_size)
+	board_x := board_size[1]
+	board_y := board_size[2]
+	board_size_x, err := strconv.Atoi(board_x)
 	if err != nil {
 		return Board{}, err
 	}
-	field_y_size, err := strconv.Atoi(board_y_size)
+	board_size_y, err := strconv.Atoi(board_y)
 	if err != nil {
 		return Board{}, err
 	}
-	field_x_size = field_x_size / 8
-	field_y_size = field_y_size / 8
-
-	fmt.Println("Board size: ", board_x_size, board_y_size)
+	board.board_size_x = board_size_x
+	board.board_size_y = board_size_y
+	field_size_x := board_size_x / 8
+	field_size_y := board_size_y / 8
 
 	pieces, err := cg_board.FindElements(selenium.ByTagName, "piece")
 	if err != nil {
@@ -118,8 +121,8 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 			if err != nil {
 				return Board{}, err
 			}
-			x = x / field_x_size
-			y = 7 - y/field_y_size
+			x = x / field_size_x
+			y = 7 - y/field_size_y
 
 			if board.orientation == "black" {
 				x = 7 - x

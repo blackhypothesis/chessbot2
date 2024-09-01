@@ -46,7 +46,6 @@ func main() {
 	}
 
 	game_2_1.Click()
-	time.Sleep(10 * time.Second)
 
 	board, err := GetBoard(driver)
 	if err != nil {
@@ -55,12 +54,22 @@ func main() {
 
 	fmt.Println(board)
 
-	move_list, err := GetMoveList(driver)
+	time.Sleep(2 * time.Second)
+	cg_board, err := driver.FindElement(selenium.ByTagName, "cg-board")
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
-	fmt.Println(move_list)
 
-	time.Sleep(2 * time.Second)
+	for x := 1500; x < 1600; x = x + 100 {
+		for y := 1500; y < 1600; y = y + 100 {
+			cg_board.MoveTo(x, y)
+			cg_board.Click()
+			fmt.Println(x, y, "clicked")
+			time.Sleep(4 * time.Second)
+		}
+	}
+	cg_board.Click()
+
+	time.Sleep(20 * time.Second)
 
 }
