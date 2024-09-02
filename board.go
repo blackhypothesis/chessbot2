@@ -16,8 +16,10 @@ type Board struct {
 	active_color   string
 	move_list      []string
 	board          [8][8]Piece
-	board_size_x   int
-	board_size_y   int
+	size           selenium.Size
+	location       selenium.Point
+	field_size     selenium.Size
+	cg_board       selenium.WebElement
 }
 
 type Piece struct {
@@ -28,14 +30,12 @@ type Piece struct {
 func GetBoard(driver selenium.WebDriver) (Board, error) {
 	board := Board{}
 	time.Sleep(1 * time.Second)
-	cg_container, err := driver.FindElement(selenium.ByTagName, "cg-container")
-	if err != nil {
-		return Board{}, err
-	}
+
 	cg_board, err := driver.FindElement(selenium.ByTagName, "cg-board")
 	if err != nil {
 		return Board{}, err
 	}
+	board.cg_board = cg_board
 
 	// get board orientation
 	board_coords, err := driver.FindElement(selenium.ByTagName, "coords")
@@ -52,27 +52,26 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 		board.orientation = "white"
 	}
 
-	board_size_string, err := cg_container.GetAttribute("style")
+	// get board size
+	size, err := cg_board.Size()
 	if err != nil {
 		return Board{}, err
 	}
-	pattern := regexp.MustCompile(`width: (?P<x_size>\d+)px; height: (?P<y_size>\d+)px;`)
-	board_size := pattern.FindStringSubmatch(board_size_string)
-	board_x := board_size[1]
-	board_y := board_size[2]
-	board_size_x, err := strconv.Atoi(board_x)
-	if err != nil {
-		return Board{}, err
-	}
-	board_size_y, err := strconv.Atoi(board_y)
-	if err != nil {
-		return Board{}, err
-	}
-	board.board_size_x = board_size_x
-	board.board_size_y = board_size_y
-	field_size_x := board_size_x / 8
-	field_size_y := board_size_y / 8
+	board.size.Height = size.Height
+	board.size.Width = size.Width
 
+	board.field_size.Width = size.Width / 8
+	board.field_size.Height = size.Height / 8
+
+	// get board location
+	location, err := cg_board.Location()
+	if err != nil {
+		return Board{}, err
+	}
+	board.location.X = location.X
+	board.location.Y = location.Y
+
+	// get pieces
 	pieces, err := cg_board.FindElements(selenium.ByTagName, "piece")
 	if err != nil {
 		return Board{}, err
@@ -121,8 +120,8 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 			if err != nil {
 				return Board{}, err
 			}
-			x = x / field_size_x
-			y = 7 - y/field_size_y
+			x = x / board.field_size.Height
+			y = 7 - y/board.field_size.Width
 
 			if board.orientation == "black" {
 				x = 7 - x
@@ -132,11 +131,13 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 		}
 	}
 
+	// get move list
 	move_list, err := GetMoveList(driver)
 	if err != nil {
 		return Board{}, err
 	}
 
+	// get active color
 	active_color := "w"
 	if len(move_list)%2 != 0 {
 		active_color = "b"
@@ -144,6 +145,7 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 	board.active_color = active_color
 	board.move_list = move_list
 
+	// get fen and castling rights
 	fen, castling_right := GetFEN(board)
 	board.fen = fen
 	board.castling_right = castling_right

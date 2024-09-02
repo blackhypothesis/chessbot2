@@ -40,36 +40,33 @@ func main() {
 		log.Fatal("Error: ", err)
 	}
 
-	game_2_1, err := driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[2]/div[2]/div[2]/div[1]")
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-
-	game_2_1.Click()
-
-	board, err := GetBoard(driver)
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-
-	fmt.Println(board)
-
 	time.Sleep(2 * time.Second)
-	cg_board, err := driver.FindElement(selenium.ByTagName, "cg-board")
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
+	playWithComputer(driver)
 
-	for x := 1500; x < 1600; x = x + 100 {
-		for y := 1500; y < 1600; y = y + 100 {
-			cg_board.MoveTo(x, y)
-			cg_board.Click()
-			fmt.Println(x, y, "clicked")
-			time.Sleep(4 * time.Second)
+	for {
+		board, err := GetBoard(driver)
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
+
+		fmt.Println("Location:   ", board.location)
+		fmt.Println("Size:       ", board.size)
+		fmt.Println("Field size: ", board.field_size)
+
+		fmt.Println("Active:     ", board.active_color)
+		fmt.Println("FEN:        ", board.fen)
+		fmt.Println("Moves:      ", board.move_list)
+		fmt.Println("")
+
+		time.Sleep(2 * time.Second)
+
+		for i := 0; i < 8; i++ {
+			for j := 0; j < 8; j++ {
+				board.cg_board.MoveTo((i-4)*board.field_size.Width, (j-4)*board.field_size.Height)
+				board.cg_board.Click()
+				fmt.Println("Click: ", i, j)
+			}
+			time.Sleep(200 * time.Millisecond)
 		}
 	}
-	cg_board.Click()
-
-	time.Sleep(20 * time.Second)
-
 }
