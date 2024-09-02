@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-vgo/robotgo"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
 )
@@ -42,6 +43,14 @@ func main() {
 
 	time.Sleep(2 * time.Second)
 	playWithComputer(driver)
+	time.Sleep(1 * time.Second)
+
+	robotgo.MouseSleep = 200
+
+	robotgo.Move(1978, 1569)
+	robotgo.Click("left")
+	robotgo.Move(1978, 1138)
+	robotgo.Click("left")
 
 	for {
 		board, err := GetBoard(driver)
@@ -58,15 +67,16 @@ func main() {
 		fmt.Println("Moves:      ", board.move_list)
 		fmt.Println("")
 
-		time.Sleep(2 * time.Second)
+		x, y := robotgo.Location()
+		fmt.Println("Mouse: ", x, y)
 
-		for i := 0; i < 8; i++ {
-			for j := 0; j < 8; j++ {
-				board.cg_board.MoveTo((i-4)*board.field_size.Width, (j-4)*board.field_size.Height)
-				board.cg_board.Click()
-				fmt.Println("Click: ", i, j)
-			}
-			time.Sleep(200 * time.Millisecond)
+		is_my_turn, err := IsMyTurn(driver)
+		if err != nil {
+			log.Println("Error: ", err)
 		}
+		fmt.Println("is my turn: ", is_my_turn)
+
+		time.Sleep(1 * time.Second)
+
 	}
 }
