@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -31,6 +32,7 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 	board := Board{}
 	time.Sleep(1 * time.Second)
 
+	log.Println("get chess board")
 	cg_board, err := driver.FindElement(selenium.ByTagName, "cg-board")
 	if err != nil {
 		return Board{}, err
@@ -38,6 +40,7 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 	board.cg_board = cg_board
 
 	// get board orientation
+	log.Println("get board orientation")
 	board_coords, err := driver.FindElement(selenium.ByTagName, "coords")
 	if err != nil {
 		return Board{}, err
@@ -53,6 +56,7 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 	}
 
 	// get board size
+	log.Println("get board size")
 	size, err := cg_board.Size()
 	if err != nil {
 		return Board{}, err
@@ -64,6 +68,7 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 	board.field_size.Height = size.Height / 8
 
 	// get board location
+	log.Println("get board location")
 	location, err := cg_board.Location()
 	if err != nil {
 		return Board{}, err
@@ -72,6 +77,7 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 	board.location.Y = location.Y
 
 	// get pieces
+	log.Println("get pieces")
 	pieces, err := cg_board.FindElements(selenium.ByTagName, "piece")
 	if err != nil {
 		return Board{}, err
@@ -81,6 +87,7 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 		var x, y int
 		var pt, color string
 
+		// the class contains the color and the type of piece
 		piece_type_string, err := piece.GetAttribute("class")
 		if err != nil {
 			return Board{}, err
@@ -91,11 +98,13 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 		color = piece_type[1]
 		pt = piece_type[2]
 
+		// the style attributes contains the coordinates of the piece
 		piece_coordinates_string, err := piece.GetAttribute("style")
 		if err != nil {
 			return Board{}, err
 		}
 
+		// extract color and piece type from the class attribute
 		pattern = regexp.MustCompile(`transform: translate\((?P<x_c>\d+)px, (?P<y_c>\d+)px\);`)
 		piece_coordinates := pattern.FindStringSubmatch(piece_coordinates_string)
 		if len(piece_coordinates) == 0 {
@@ -132,6 +141,7 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 	}
 
 	// get move list
+	log.Println("get move list")
 	move_list, err := GetMoveList(driver)
 	if err != nil {
 		return Board{}, err
@@ -146,10 +156,11 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 	board.move_list = move_list
 
 	// get fen and castling rights
+	log.Println("calculate FEN and castling rights")
 	fen, castling_right := GetFEN(board)
 	board.fen = fen
 	board.castling_right = castling_right
-
+	log.Println("all board informatoin collected")
 	return board, nil
 }
 

@@ -2,9 +2,13 @@
 
 ## selenium
 https://www.zenrows.com/blog/selenium-golang
+https://github.com/tebeka/selenium
 
 ## modules
-chess https://pkg.go.dev/github.com/notnil/chess#section-readme
+robotgo https://github.com/go-vgo/robotgo
+        https://pkg.go.dev/github.com/go-vgo/robotgo
+
+chess   https://pkg.go.dev/github.com/notnil/chess#section-readme
 
 
 ## mouse coordinates
