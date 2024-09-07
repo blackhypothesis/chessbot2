@@ -77,26 +77,19 @@ func getGameState(driver selenium.WebDriver) string {
 
 func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (func(move string), error) {
 	cg_board, err := driver.FindElement(selenium.ByTagName, "cg-board")
-
+	if err != nil {
+		return nil, err
+	}
 	robotgo.MouseSleep = 100
 
 	// get board size
 	board_size := new(selenium.Size)
-	if err != nil {
-		return nil, err
-	}
-
 	board_size, err = cg_board.Size()
 	if err != nil {
 		return nil, err
 	}
-
 	// get board location
 	board_location := new(selenium.Point)
-	if err != nil {
-		return nil, err
-	}
-
 	board_location, err = cg_board.Location()
 	if err != nil {
 		return nil, err
