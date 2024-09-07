@@ -6,6 +6,24 @@ import (
 	"github.com/tebeka/selenium"
 )
 
+func playWithHuman(time_setting string, driver selenium.WebDriver) error {
+	time_settings, err := driver.FindElements(selenium.ByClassName, "clock")
+	if err != nil {
+		return err
+	}
+	switch time_setting {
+	case "1+0":
+		time_settings[0].Click()
+	case "2+1":
+		time_settings[1].Click()
+	case "3+0":
+		time_settings[2].Click()
+	case "3+2":
+		time_settings[3].Click()
+	}
+	return nil
+}
+
 func playWithComputer(driver selenium.WebDriver) error {
 	// Button [PLAY WITH COMPUTER]
 	button, err := driver.FindElement(selenium.ByClassName, "config_ai")
@@ -15,8 +33,8 @@ func playWithComputer(driver selenium.WebDriver) error {
 	button.Click()
 	time.Sleep(500 * time.Millisecond)
 
-	// Button Strength [4]
-	level, err := driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[3]/div[1]/group/div[4]/label")
+	// Button Strength [8]
+	level, err := driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[3]/div[1]/group/div[8]/label")
 	if err != nil {
 		return err
 	}
@@ -42,5 +60,14 @@ func playWithComputer(driver selenium.WebDriver) error {
 		return err
 	}
 	bw.Click()
+	return nil
+}
+
+func giveMoreTime(driver selenium.WebDriver) error {
+	more_time, err := driver.FindElement(selenium.ByClassName, "moretime")
+	if err != nil {
+		return err
+	}
+	more_time.Click()
 	return nil
 }

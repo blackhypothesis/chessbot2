@@ -26,3 +26,32 @@ result.length -> 0
 ### game finished
 result = document.getElementsByClassName("result");
 result[0].innerHTML 
+
+
+
+## wait for webelement
+
+```
+wait for the element "your turn" for about 60 seconds
+this does only work, when there is no time control, which is usualy not the case
+err := driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+	yourTurn, _ := driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[8]/div`)
+	if yourTurn != nil {
+		return yourTurn.IsDisplayed()
+	}
+	return false, nil
+}, 60*time.Second)
+if err != nil {
+	return false, err
+}
+yourTurn, err := driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[8]/div`)
+if err != nil {
+	return false, err
+}
+yt, err := yourTurn.Text()
+if err != nil {
+	return false, nil
+}
+fmt.Println("yourturn: ", yt)
+return true, nil
+```

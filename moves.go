@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -9,22 +8,31 @@ import (
 	"github.com/tebeka/selenium"
 )
 
-func getMoveList(driver selenium.WebDriver) ([]string, error) {
+func getMoveList(driver selenium.WebDriver) func() []string {
 	move_list := []string{}
+	last_move_list_len := 0
 
-	move_list_container, err := driver.FindElements(selenium.ByTagName, "kwdb")
-	if err != nil {
-		return move_list, err
-	}
-
-	for _, move := range move_list_container {
-		move_str, err := move.Text()
+	return func() []string {
+		move_list_container, err := driver.FindElements(selenium.ByTagName, "kwdb")
 		if err != nil {
-			return move_list, err
+			return move_list
 		}
-		move_list = append(move_list, move_str)
+		move_list_container_len := len(move_list_container)
+		number_new_moves := move_list_container_len - last_move_list_len
+
+		if number_new_moves > 0 {
+			for move_index := number_new_moves; move_index > 0; move_index-- {
+				move_element := move_list_container[len(move_list_container)-move_index]
+				move, err := move_element.Text()
+				if err != nil {
+					return move_list
+				}
+				move_list = append(move_list, move)
+			}
+			last_move_list_len = len(move_list)
+		}
+		return move_list
 	}
-	return move_list, nil
 }
 
 func isWhiteOrientation(driver selenium.WebDriver) (bool, error) {
@@ -43,8 +51,7 @@ func isWhiteOrientation(driver selenium.WebDriver) (bool, error) {
 	}
 }
 
-func isMyTurn(move_list []string, is_white_orientation bool, driver selenium.WebDriver) bool {
-
+func isMyTurn(move_list []string, is_white_orientation bool) bool {
 	// we play with white
 	if len(move_list)%2 == 0 && is_white_orientation {
 		return true
@@ -53,37 +60,7 @@ func isMyTurn(move_list []string, is_white_orientation bool, driver selenium.Web
 	if len(move_list)%2 == 1 && !is_white_orientation {
 		return true
 	}
-
 	return false
-
-	// wait for the element "your turn" for about 60 seconds
-	// this does only work, when there is no time control, which is usualy not the case
-
-	// err := driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
-	// 	yourTurn, _ := driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[8]/div`)
-	//
-	// 	if yourTurn != nil {
-	// 		return yourTurn.IsDisplayed()
-	// 	}
-	// 	return false, nil
-	// }, 60*time.Second)
-	//
-	// if err != nil {
-	// 	return false, err
-	// }
-	//
-	// yourTurn, err := driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[8]/div`)
-	// if err != nil {
-	// 	return false, err
-	// }
-	//
-	// yt, err := yourTurn.Text()
-	// if err != nil {
-	// 	return false, nil
-	// }
-	// fmt.Println("yourturn: ", yt)
-	// return true, nil
-
 }
 
 func getGameState(driver selenium.WebDriver) string {
@@ -101,7 +78,7 @@ func getGameState(driver selenium.WebDriver) string {
 func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (func(move string), error) {
 	cg_board, err := driver.FindElement(selenium.ByTagName, "cg-board")
 
-	robotgo.MouseSleep = 200
+	robotgo.MouseSleep = 100
 
 	// get board size
 	board_size := new(selenium.Size)
@@ -130,35 +107,36 @@ func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (fu
 	field_size.Height = board_size.Height / 8
 
 	return func(move string) {
-
-		mouse_click_start := new(selenium.Point)
-		mouse_click_end := new(selenium.Point)
-		fmt.Println(board_location, board_size, field_size)
-
+		piece_start := new(selenium.Point)
+		piece_end := new(selenium.Point)
 		m := strings.Split(move, "")
-
-		mouse_click_start.X = getCoordinate(m[0])
-		mouse_click_start.Y, _ = strconv.Atoi(m[1])
-		mouse_click_end.X = getCoordinate(m[2])
-		mouse_click_end.Y, _ = strconv.Atoi(m[3])
-
-		mouse_click_start.Y--
-		mouse_click_end.Y--
-
+		piece_start.X = getCoordinate(m[0])
+		piece_start.Y, _ = strconv.Atoi(m[1])
+		piece_end.X = getCoordinate(m[2])
+		piece_end.Y, _ = strconv.Atoi(m[3])
+		piece_start.Y--
+		piece_end.Y--
 		if !is_white_orientation {
-			mouse_click_start.X = 7 - mouse_click_start.X
-			mouse_click_start.Y = 7 - mouse_click_start.Y
-			mouse_click_end.X = 7 - mouse_click_end.X
-			mouse_click_end.Y = 7 - mouse_click_end.Y
+			piece_start.X = 7 - piece_start.X
+			piece_start.Y = 7 - piece_start.Y
+			piece_end.X = 7 - piece_end.X
+			piece_end.Y = 7 - piece_end.Y
 		}
 
 		y_offset := 170
+		location_start := selenium.Point{
+			X: board_location.X + piece_start.X*field_size.Width + field_size.Width/2,
+			Y: y_offset + board_location.Y + (7-piece_start.Y)*field_size.Height + field_size.Height/2,
+		}
+		location_end := selenium.Point{
+			X: board_location.X + piece_end.X*field_size.Width + field_size.Width/2,
+			Y: y_offset + board_location.Y + (7-piece_end.Y)*field_size.Height + field_size.Height/2,
+		}
 
-		robotgo.Move(board_location.X+mouse_click_start.X*field_size.Width+field_size.Width/2, y_offset+board_location.Y+(7-mouse_click_start.Y)*field_size.Height+field_size.Height/2)
+		robotgo.Move(location_start.X, location_start.Y)
 		robotgo.Click("left")
-		robotgo.Move(board_location.X+mouse_click_end.X*field_size.Width+field_size.Width/2, y_offset+board_location.Y+(7-mouse_click_end.Y)*field_size.Height+field_size.Height/2)
+		robotgo.Move(location_end.X, location_end.Y)
 		robotgo.Click("left")
-
 	}, nil
 }
 

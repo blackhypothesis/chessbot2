@@ -54,7 +54,8 @@ func main() {
 	}
 
 	time.Sleep(2 * time.Second)
-	// playWithComputer(driver)
+	//playWithComputer(driver)
+	playWithHuman("1+0", driver)
 	time.Sleep(1 * time.Second)
 
 	is_white_orientation := true
@@ -70,40 +71,48 @@ func main() {
 	}
 
 	playMove, err := playMoveWithMouse(driver, is_white_orientation)
-
+	if err != nil {
+		log.Fatal(err)
+	}
+	moveList := getMoveList(driver)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for {
-		move_list, err := getMoveList(driver)
-		if err != nil {
-			log.Println(err)
-		}
+		move_list := moveList()
 		game := chess.NewGame()
 
-		if isMyTurn(move_list, is_white_orientation, driver) {
+		if isMyTurn(move_list, is_white_orientation) {
 			for _, move := range move_list {
 				if err := game.MoveStr(move); err != nil {
 					log.Println("Loading moves: ", err)
 				}
 			}
 			cmdPos := uci.CmdPosition{Position: game.Position()}
-			cmdGo := uci.CmdGo{MoveTime: time.Second / 3}
+			// cmdGo := uci.CmdGo{MoveTime: time.Second / 4}
+			cmdGo := uci.CmdGo{Depth: 18}
 			if err := eng.Run(cmdPos, cmdGo); err != nil {
 				panic(err)
 			}
 			search_resultes := eng.SearchResults()
 			move := search_resultes.BestMove
 			playMove(move.String())
+			time.Sleep(200 * time.Millisecond)
 			log.Println("ENGINE: best move: ", move)
 			log.Println("ENGINE: info: ", search_resultes.Info.Score)
 			log.Println("CHESS: FEN: ", game.Position().Board())
+			log.Println("CHESS: Movelist: ", move_list)
+
+			if len(move_list)%20 == 0 || len(move_list)%20 == 1 {
+				// giveMoreTime(driver)
+			}
 		}
-		if getGameState(driver) != "ongoing" {
+		game_state := getGameState(driver)
+		if game_state != "ongoing" {
+			log.Println("Game State: ", game_state)
 			time.Sleep(2 * time.Second)
 			break
-
 		}
 	}
 }

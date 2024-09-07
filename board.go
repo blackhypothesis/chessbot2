@@ -142,10 +142,12 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 
 	// get move list
 	log.Println("get move list")
-	move_list, err := getMoveList(driver)
+
+	moveList := getMoveList(driver)
 	if err != nil {
-		return Board{}, err
+		log.Fatal(err)
 	}
+	move_list := moveList()
 
 	// get active color
 	active_color := "w"
