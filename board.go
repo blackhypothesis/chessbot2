@@ -142,7 +142,7 @@ func GetBoard(driver selenium.WebDriver) (Board, error) {
 
 	// get move list
 	log.Println("get move list")
-	move_list, err := GetMoveList(driver)
+	move_list, err := getMoveList(driver)
 	if err != nil {
 		return Board{}, err
 	}

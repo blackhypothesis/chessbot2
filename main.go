@@ -5,12 +5,24 @@ import (
 	"time"
 
 	"github.com/go-vgo/robotgo"
+	"github.com/notnil/chess"
+	"github.com/notnil/chess/uci"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
 )
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
+	eng, err := uci.New("stockfish")
+	if err != nil {
+		panic(err)
+	}
+	// initialize uci with new game
+	if err := eng.Run(uci.CmdUCI, uci.CmdIsReady, uci.CmdUCINewGame); err != nil {
+		panic(err)
+	}
+	defer eng.Close()
 
 	service, err := selenium.NewChromeDriverService("./chromedriver-linux64/chromedriver", 4444)
 	if err != nil {
@@ -43,7 +55,7 @@ func main() {
 	}
 
 	time.Sleep(2 * time.Second)
-	playWithComputer(driver)
+	// playWithComputer(driver)
 	time.Sleep(1 * time.Second)
 
 	// robotgo.MouseSleep = 200
@@ -52,48 +64,52 @@ func main() {
 	// robotgo.Move(1978, 1138)
 	// robotgo.Click("left")
 
+	is_white_orientation := true
+
 	for {
-		board := Board{}
-		for {
-			board, err = GetBoard(driver)
-			if err != nil {
-				log.Println("Board Error: ", err)
-				log.Println("Will retry to get board information, ...")
-				time.Sleep(10 * time.Second)
-			} else {
-				break
-			}
-		}
-
-		log.Println("Orientation: ", board.orientation)
-		log.Println("Location:    ", board.location)
-		log.Println("Size:        ", board.size)
-		log.Println("Field size:  ", board.field_size)
-
-		log.Println("Active:      ", board.active_color)
-		log.Println("FEN:         ", board.fen)
-		log.Println("Moves:       ", board.move_list)
-
-		x, y := robotgo.Location()
-		log.Println("Mouse: ", x, y)
-
-		windowTitle := robotgo.GetTitle()
-		windowPID := robotgo.GetPid()
-		x, y, w, h := robotgo.GetBounds(windowPID)
-		log.Println("Window Title: ", windowTitle)
-		log.Println("Window PID  : ", windowPID)
-		log.Println("x: ", x, " y: ", y, " h: ", h, " w: ", w)
-
-		game_state := getGameState(driver)
-		log.Println("Game state: ", game_state)
-		is_my_turn, err := IsMyTurn(&board, driver)
+		is_white_orientation, err = isWhiteOrientation(driver)
 		if err != nil {
-			log.Println("Error: ", err)
+			log.Println("IsWhiteOrientation Error: ", err)
+			log.Println("Will retry to get orientation, ...")
+		} else {
+			break
 		}
-		log.Println("###### is my turn: ", is_my_turn)
-		log.Println("------------------------------------------------------------------------------------------")
+	}
 
-		time.Sleep(100 * time.Millisecond)
+	playMove, err := playMoveWithMouse(driver, is_white_orientation)
 
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		log.Println("Get move list ...")
+		move_list, err := getMoveList(driver)
+		if err != nil {
+			log.Println(err)
+		}
+
+		log.Println("Movelist processed.")
+		game := chess.NewGame()
+
+		if isMyTurn(move_list, is_white_orientation, driver) {
+			for _, move := range move_list {
+				if err := game.MoveStr(move); err != nil {
+					log.Println("Loading moves: ", err)
+				}
+			}
+			cmdPos := uci.CmdPosition{Position: game.Position()}
+			cmdGo := uci.CmdGo{MoveTime: time.Second / 1}
+			if err := eng.Run(cmdPos, cmdGo); err != nil {
+				panic(err)
+			}
+			move := eng.SearchResults().BestMove
+			playMove(move.String())
+			log.Println("ENGINE: best move: ", move)
+
+			log.Println("CHESS: ", game.Position().Board())
+		}
+		x, y := robotgo.Location()
+		log.Println("Mouse location: ", x, y)
 	}
 }
