@@ -4,7 +4,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-vgo/robotgo"
 	"github.com/notnil/chess"
 	"github.com/notnil/chess/uci"
 	"github.com/tebeka/selenium"
@@ -58,12 +57,6 @@ func main() {
 	// playWithComputer(driver)
 	time.Sleep(1 * time.Second)
 
-	// robotgo.MouseSleep = 200
-	// robotgo.Move(1978, 1569)
-	// robotgo.Click("left")
-	// robotgo.Move(1978, 1138)
-	// robotgo.Click("left")
-
 	is_white_orientation := true
 
 	for {
@@ -83,13 +76,10 @@ func main() {
 	}
 
 	for {
-		log.Println("Get move list ...")
 		move_list, err := getMoveList(driver)
 		if err != nil {
 			log.Println(err)
 		}
-
-		log.Println("Movelist processed.")
 		game := chess.NewGame()
 
 		if isMyTurn(move_list, is_white_orientation, driver) {
@@ -99,17 +89,21 @@ func main() {
 				}
 			}
 			cmdPos := uci.CmdPosition{Position: game.Position()}
-			cmdGo := uci.CmdGo{MoveTime: time.Second / 1}
+			cmdGo := uci.CmdGo{MoveTime: time.Second / 3}
 			if err := eng.Run(cmdPos, cmdGo); err != nil {
 				panic(err)
 			}
-			move := eng.SearchResults().BestMove
+			search_resultes := eng.SearchResults()
+			move := search_resultes.BestMove
 			playMove(move.String())
 			log.Println("ENGINE: best move: ", move)
-
-			log.Println("CHESS: ", game.Position().Board())
+			log.Println("ENGINE: info: ", search_resultes.Info.Score)
+			log.Println("CHESS: FEN: ", game.Position().Board())
 		}
-		x, y := robotgo.Location()
-		log.Println("Mouse location: ", x, y)
+		if getGameState(driver) != "ongoing" {
+			time.Sleep(2 * time.Second)
+			break
+
+		}
 	}
 }
