@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -33,7 +32,6 @@ func getEngineBestMove(game *chess.Game, eng *uci.Engine, move_list []string) (*
 		MoveTime: 1 * time.Second,
 	}
 
-	fmt.Println("cmdPos: ", cmdPos)
 	if err := eng.Run(cmdThreads, cmdPos, cmdGo); err != nil {
 		return nil, err
 	}
