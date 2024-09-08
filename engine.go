@@ -9,7 +9,7 @@ import (
 	"github.com/notnil/chess/uci"
 )
 
-func getEngineBestMove(game *chess.Game, eng *uci.Engine, move_list []string) *chess.Move {
+func getEngineBestMove(game *chess.Game, eng *uci.Engine, move_list []string) (*chess.Move, error) {
 	// defer TimeTrack(time.Now())
 	for _, move := range move_list {
 		if err := game.MoveStr(move); err != nil {
@@ -35,7 +35,7 @@ func getEngineBestMove(game *chess.Game, eng *uci.Engine, move_list []string) *c
 
 	fmt.Println("cmdPos: ", cmdPos)
 	if err := eng.Run(cmdThreads, cmdPos, cmdGo); err != nil {
-		panic(err)
+		return nil, err
 	}
 	search_resultes := eng.SearchResults()
 	move := search_resultes.BestMove
@@ -52,5 +52,5 @@ func getEngineBestMove(game *chess.Game, eng *uci.Engine, move_list []string) *c
 	log.Println("Info: Time:    ", search_resultes.Info.Time)
 	log.Println("-----------------------------------------------------------")
 
-	return move
+	return move, nil
 }

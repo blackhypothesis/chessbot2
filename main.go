@@ -75,10 +75,12 @@ func main() {
 			}
 		}
 
+		// get closure function to play moves
 		playMove, err := playMoveWithMouse(driver, is_white_orientation)
 		if err != nil {
 			log.Fatal(err)
 		}
+		// get closure function to get move list
 		moveList := getMoveList(driver)
 		if err != nil {
 			log.Fatal(err)
@@ -88,9 +90,13 @@ func main() {
 			move_list := moveList()
 			game := chess.NewGame()
 
-			if isMyTurn(move_list, is_white_orientation) {
-				move := getEngineBestMove(game, eng, move_list)
-				playMove(move.String())
+			if isMyTurn(move_list, is_white_orientation) && len(move_list) > 20 {
+				move, err := getEngineBestMove(game, eng, move_list)
+				if err != nil {
+					log.Println("Can't get best move from engine: ", err)
+				} else {
+					playMove(move.String())
+				}
 			}
 			game_state := getGameState(driver)
 			if game_state != "ongoing" {
