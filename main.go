@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"regexp"
+	"runtime"
 	"time"
 
 	"github.com/notnil/chess"
@@ -58,61 +61,66 @@ func main() {
 	playWithHuman("1+0", driver)
 	time.Sleep(1 * time.Second)
 
-	is_white_orientation := true
-
 	for {
-		is_white_orientation, err = isWhiteOrientation(driver)
+		time.Sleep(2 * time.Second)
+		is_white_orientation := true
+
+		for {
+			is_white_orientation, err = isWhiteOrientation(driver)
+			if err != nil {
+				log.Println("IsWhiteOrientation Error: ", err)
+				log.Println("Will retry to get orientation, ...")
+			} else {
+				break
+			}
+		}
+
+		playMove, err := playMoveWithMouse(driver, is_white_orientation)
 		if err != nil {
-			log.Println("IsWhiteOrientation Error: ", err)
-			log.Println("Will retry to get orientation, ...")
-		} else {
-			break
+			log.Fatal(err)
 		}
-	}
+		moveList := getMoveList(driver)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	playMove, err := playMoveWithMouse(driver, is_white_orientation)
-	if err != nil {
-		log.Fatal(err)
-	}
-	moveList := getMoveList(driver)
-	if err != nil {
-		log.Fatal(err)
-	}
+		for {
+			move_list := moveList()
+			game := chess.NewGame()
 
-	for {
-		move_list := moveList()
-		game := chess.NewGame()
+			if isMyTurn(move_list, is_white_orientation) {
+				move := playBestMove(game, eng, move_list)
+				playMove(move.String())
+				time.Sleep(200 * time.Millisecond)
+				log.Println("ENGINE: best move: ", move)
+				// log.Println("ENGINE: info: ", search_resultes.Info.Score)
+				// log.Println("CHESS: FEN: ", game.Position().Board())
+				// log.Println("CHESS: Movelist: ", move_list)
 
-		if isMyTurn(move_list, is_white_orientation) {
-			for _, move := range move_list {
-				if err := game.MoveStr(move); err != nil {
-					log.Println("Loading moves: ", err)
-				}
 			}
-			cmdPos := uci.CmdPosition{Position: game.Position()}
-			// cmdGo := uci.CmdGo{MoveTime: time.Second / 4}
-			cmdGo := uci.CmdGo{Depth: 18}
-			if err := eng.Run(cmdPos, cmdGo); err != nil {
-				panic(err)
-			}
-			search_resultes := eng.SearchResults()
-			move := search_resultes.BestMove
-			playMove(move.String())
-			time.Sleep(200 * time.Millisecond)
-			log.Println("ENGINE: best move: ", move)
-			log.Println("ENGINE: info: ", search_resultes.Info.Score)
-			log.Println("CHESS: FEN: ", game.Position().Board())
-			log.Println("CHESS: Movelist: ", move_list)
-
-			if len(move_list)%20 == 0 || len(move_list)%20 == 1 {
-				// giveMoreTime(driver)
+			game_state := getGameState(driver)
+			if game_state != "ongoing" {
+				log.Println("Game State: ", game_state)
+				time.Sleep(2 * time.Second)
+				newOpponent(driver)
+				break
 			}
 		}
-		game_state := getGameState(driver)
-		if game_state != "ongoing" {
-			log.Println("Game State: ", game_state)
-			time.Sleep(2 * time.Second)
-			break
-		}
 	}
+}
+
+func TimeTrack(start time.Time) {
+	elapsed := time.Since(start)
+
+	// Skip this function, and fetch the PC and file for its parent.
+	pc, _, _, _ := runtime.Caller(1)
+
+	// Retrieve a function object this functions parent.
+	funcObj := runtime.FuncForPC(pc)
+
+	// Regex to extract just the function name (and not the module path).
+	runtimeFunc := regexp.MustCompile(`^.*\.(.*)$`)
+	name := runtimeFunc.ReplaceAllString(funcObj.Name(), "$1")
+
+	log.Println(fmt.Sprintf("%s took %s", name, elapsed))
 }

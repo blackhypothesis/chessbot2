@@ -3,12 +3,14 @@ package main
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-vgo/robotgo"
 	"github.com/tebeka/selenium"
 )
 
 func getMoveList(driver selenium.WebDriver) func() []string {
+	defer TimeTrack(time.Now())
 	move_list := []string{}
 	last_move_list_len := 0
 
@@ -19,7 +21,6 @@ func getMoveList(driver selenium.WebDriver) func() []string {
 		}
 		move_list_container_len := len(move_list_container)
 		number_new_moves := move_list_container_len - last_move_list_len
-
 		if number_new_moves > 0 {
 			for move_index := number_new_moves; move_index > 0; move_index-- {
 				move_element := move_list_container[len(move_list_container)-move_index]
@@ -36,6 +37,7 @@ func getMoveList(driver selenium.WebDriver) func() []string {
 }
 
 func isWhiteOrientation(driver selenium.WebDriver) (bool, error) {
+	defer TimeTrack(time.Now())
 	board_coords, err := driver.FindElement(selenium.ByTagName, "coords")
 	if err != nil {
 		return false, err
@@ -76,6 +78,7 @@ func getGameState(driver selenium.WebDriver) string {
 }
 
 func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (func(move string), error) {
+	defer TimeTrack(time.Now())
 	cg_board, err := driver.FindElement(selenium.ByTagName, "cg-board")
 	if err != nil {
 		return nil, err

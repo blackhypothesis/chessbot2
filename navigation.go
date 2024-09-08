@@ -71,3 +71,12 @@ func giveMoreTime(driver selenium.WebDriver) error {
 	more_time.Click()
 	return nil
 }
+
+func newOpponent(driver selenium.WebDriver) error {
+	new_opponent, err := driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[5]/div/a[1]`) // New opponent
+	if err != nil {
+		return err
+	}
+	new_opponent.Click()
+	return nil
+}
