@@ -83,7 +83,7 @@ func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (fu
 	if err != nil {
 		return nil, err
 	}
-	robotgo.MouseSleep = 100
+	robotgo.MouseSleep = 50
 
 	// get board size
 	board_size := new(selenium.Size)
@@ -133,6 +133,31 @@ func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (fu
 		robotgo.Click("left")
 		robotgo.Move(location_end.X, location_end.Y)
 		robotgo.Click("left")
+
+		// piece promotion
+		// calculate the field to click, to promote the pawn to the desired piece
+		if len(m) == 5 {
+			promotion_click_square := new(selenium.Point)
+			promotion_click_square.X = piece_end.X
+
+			switch m[4] {
+			case "q":
+				promotion_click_square.Y = 7
+			case "n":
+				promotion_click_square.Y = 6
+			case "r":
+				promotion_click_square.Y = 5
+			case "b":
+				promotion_click_square.Y = 4
+			}
+			location := selenium.Point{
+				X: board_location.X + promotion_click_square.X*field_size.Width + field_size.Width/2,
+				Y: y_offset + board_location.Y + (7-promotion_click_square.Y)*field_size.Height + field_size.Height/2,
+			}
+
+			robotgo.Move(location.X, location.Y)
+			robotgo.Click("left")
+		}
 	}, nil
 }
 

@@ -89,19 +89,13 @@ func main() {
 			game := chess.NewGame()
 
 			if isMyTurn(move_list, is_white_orientation) {
-				move := playBestMove(game, eng, move_list)
+				move := getEngineBestMove(game, eng, move_list)
 				playMove(move.String())
-				time.Sleep(200 * time.Millisecond)
-				log.Println("ENGINE: best move: ", move)
-				// log.Println("ENGINE: info: ", search_resultes.Info.Score)
-				// log.Println("CHESS: FEN: ", game.Position().Board())
-				// log.Println("CHESS: Movelist: ", move_list)
-
 			}
 			game_state := getGameState(driver)
 			if game_state != "ongoing" {
 				log.Println("Game State: ", game_state)
-				time.Sleep(2 * time.Second)
+				time.Sleep(4 * time.Second)
 				newOpponent(driver)
 				break
 			}
