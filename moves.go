@@ -21,17 +21,15 @@ func getMoveList(driver selenium.WebDriver) func() []string {
 		}
 		move_list_container_len := len(move_list_container)
 		number_new_moves := move_list_container_len - last_move_list_len
-		if number_new_moves > 0 {
-			for move_index := number_new_moves; move_index > 0; move_index-- {
-				move_element := move_list_container[len(move_list_container)-move_index]
-				move, err := move_element.Text()
-				if err != nil {
-					return move_list
-				}
-				move_list = append(move_list, move)
+		for move_index := number_new_moves; move_index > 0; move_index-- {
+			move_element := move_list_container[len(move_list_container)-move_index]
+			move, err := move_element.Text()
+			if err != nil {
+				return move_list
 			}
-			last_move_list_len = len(move_list)
+			move_list = append(move_list, move)
 		}
+		last_move_list_len = len(move_list)
 		return move_list
 	}
 }
