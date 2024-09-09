@@ -9,7 +9,7 @@ robotgo https://github.com/go-vgo/robotgo
         https://pkg.go.dev/github.com/go-vgo/robotgo
 
 chess   https://pkg.go.dev/github.com/notnil/chess#section-readme
-
+https://chess.stackexchange.com/questions/29860/is-there-a-list-of-approximate-elo-ratings-for-each-stockfish-level
 
 ## mouse coordinates
 document.onclick=function(event) {

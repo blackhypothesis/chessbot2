@@ -1,10 +1,45 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/tebeka/selenium"
 )
+
+func signIn(username string, password string, driver selenium.WebDriver) error {
+	sign_in, err := driver.FindElement(selenium.ByClassName, "signin")
+	if err != nil {
+		return err
+	}
+	sign_in.Click()
+
+	time.Sleep(1 * time.Second)
+
+	form_username, err := driver.FindElement(selenium.ByID, "form3-username")
+	if err != nil {
+		return err
+	}
+	form_password, err := driver.FindElement(selenium.ByID, "form3-password")
+	if err != nil {
+		return err
+	}
+	button_submit, err := driver.FindElement(selenium.ByClassName, "submit")
+	if err != nil {
+		return err
+	}
+	log.Println("Login with: ", username, password)
+	form_username.Clear()
+	form_username.SendKeys(username)
+	time.Sleep(1 * time.Second)
+
+	form_password.Clear()
+	form_password.SendKeys(password)
+	time.Sleep(1 * time.Second)
+	button_submit.Click()
+
+	return nil
+}
 
 func playWithHuman(time_setting string, driver selenium.WebDriver) error {
 	time_settings, err := driver.FindElements(selenium.ByClassName, "clock")

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -75,7 +77,7 @@ func getGameState(driver selenium.WebDriver) string {
 	return state
 }
 
-func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (func(move string), error) {
+func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (func(move string, len_move_list int, time_left_seconds [2]int), error) {
 	defer TimeTrack(time.Now())
 	cg_board, err := driver.FindElement(selenium.ByTagName, "cg-board")
 	if err != nil {
@@ -100,7 +102,10 @@ func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (fu
 	field_size.Width = board_size.Width / 8
 	field_size.Height = board_size.Height / 8
 
-	return func(move string) {
+	min_wait_seconds := 0.5
+	max_wait_seconds := 10.0
+
+	return func(move string, len_move_list int, time_left_seconds [2]int) {
 		piece_start := new(selenium.Point)
 		piece_end := new(selenium.Point)
 		m := strings.Split(move, "")
@@ -127,6 +132,26 @@ func playMoveWithMouse(driver selenium.WebDriver, is_white_orientation bool) (fu
 			Y: y_offset + board_location.Y + (7-piece_end.Y)*field_size.Height + field_size.Height/2,
 		}
 
+		// artificially wait for some time to get higher standarddeviation of move time usage
+		max_wait_secs := 0.0
+		// do not spend too much time in the first 6 moves
+		if len_move_list < 12 {
+			max_wait_secs = 2.0
+		} else {
+			// play faster when the time left to play is lower
+			// keep 15 seconds as reserve
+			max_wait_secs = float64(time_left_seconds[0]-15) / 10
+			if max_wait_secs < 0.8 {
+				max_wait_secs = 0.8
+			}
+		}
+		if max_wait_secs > max_wait_seconds {
+			max_wait_secs = max_wait_seconds
+		}
+		wait_seconds := min_wait_seconds + rand.Float64()*(max_wait_secs-min_wait_seconds)
+		log.Printf("Waiting for %f seconds ...\n", wait_seconds)
+		time.Sleep(time.Duration(wait_seconds) * time.Second)
+		log.Printf("Play move: %s\n", move)
 		robotgo.Move(location_start.X, location_start.Y)
 		robotgo.Click("left")
 		robotgo.Move(location_end.X, location_end.Y)

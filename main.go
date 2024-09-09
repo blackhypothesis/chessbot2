@@ -57,9 +57,13 @@ func main() {
 	}
 
 	time.Sleep(2 * time.Second)
-	//playWithComputer(driver)
-	playWithHuman("1+0", driver)
-	time.Sleep(1 * time.Second)
+	// playWithComputer(driver)
+	err = signIn("abc", "def", driver)
+	if err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(2 * time.Second)
+	playWithHuman("3+0", driver)
 
 	for {
 		time.Sleep(2 * time.Second)
@@ -90,12 +94,19 @@ func main() {
 			move_list := moveList()
 			game := chess.NewGame()
 
-			if isMyTurn(move_list, is_white_orientation) && len(move_list) > 20 {
+			if isMyTurn(move_list, is_white_orientation) {
 				move, err := getEngineBestMove(game, eng, move_list)
 				if err != nil {
 					log.Println("Can't get best move from engine: ", err)
 				} else {
-					playMove(move.String())
+					time_left_seconds, err := getTimeLeftSeconds(driver)
+					if err != nil {
+						log.Println("Can't get time left")
+					}
+					playMove(move.String(), len(move_list), time_left_seconds)
+				}
+				if err != nil {
+					log.Println("Can't get time left")
 				}
 			}
 			game_state := getGameState(driver)
