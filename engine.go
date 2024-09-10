@@ -8,8 +8,19 @@ import (
 	"github.com/notnil/chess/uci"
 )
 
-func getEngineBestMove(game *chess.Game, eng *uci.Engine, move_list []string) (*chess.Move, error) {
+func getEngineBestMove(game *chess.Game, move_list []string) (*chess.Move, error) {
 	// defer TimeTrack(time.Now())
+
+	eng, err := uci.New("stockfish")
+	if err != nil {
+		return nil, err
+	}
+	// initialize uci with new game
+	if err := eng.Run(uci.CmdUCI, uci.CmdIsReady, uci.CmdUCINewGame); err != nil {
+		return nil, err
+	}
+	defer eng.Close()
+
 	for _, move := range move_list {
 		if err := game.MoveStr(move); err != nil {
 			log.Println("Loading moves: ", err)
@@ -24,17 +35,17 @@ func getEngineBestMove(game *chess.Game, eng *uci.Engine, move_list []string) (*
 
 	cmdSkill := uci.CmdSetOption{
 		Name:  "Skill Level",
-		Value: "10",
+		Value: "20",
 	}
 
-	depth := 20
+	depth := 21
 	if len(move_list) > 60 {
 		depth = 16
 	}
 	cmdPos := uci.CmdPosition{Position: game.Position()}
 	cmdGo := uci.CmdGo{
 		Depth:    depth,
-		MoveTime: 1500 * time.Millisecond,
+		MoveTime: 1000 * time.Millisecond,
 	}
 
 	if err := eng.Run(cmdThreads, cmdSkill, cmdPos, cmdGo); err != nil {

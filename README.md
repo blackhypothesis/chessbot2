@@ -55,3 +55,10 @@ if err != nil {
 fmt.Println("yourturn: ", yt)
 return true, nil
 ```
+
+# chess.com
+## move list
+```
+move_list = document.getElementsByClassName("main-line-row")
+move = move_list[0].getElementsByClassName("main-line-ply")
+```

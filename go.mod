@@ -11,6 +11,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-vgo/robotgo v0.110.2 // indirect
 	github.com/jezek/xgb v1.1.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kbinani/screenshot v0.0.0-20230812210009-b87d31814237 // indirect
 	github.com/lufia/plan9stats v0.0.0-20230326075908-cb1d2100619a // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect

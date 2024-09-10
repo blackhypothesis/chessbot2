@@ -8,23 +8,17 @@ import (
 	"time"
 
 	"github.com/notnil/chess"
-	"github.com/notnil/chess/uci"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
 )
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-
-	eng, err := uci.New("stockfish")
+	env, err := getENV()
 	if err != nil {
-		panic(err)
+		log.Fatal("Error: ", err)
 	}
-	// initialize uci with new game
-	if err := eng.Run(uci.CmdUCI, uci.CmdIsReady, uci.CmdUCINewGame); err != nil {
-		panic(err)
-	}
-	defer eng.Close()
+	log.Println("Login: ", env.Login, "  Password: ", env.Password)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
 	service, err := selenium.NewChromeDriverService("./chromedriver-linux64/chromedriver", 4444)
 	if err != nil {
@@ -58,12 +52,12 @@ func main() {
 
 	time.Sleep(2 * time.Second)
 	// playWithComputer(driver)
-	err = signIn("abc", "def", driver)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err = signIn(env.Login, env.Password, driver)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 	time.Sleep(2 * time.Second)
-	playWithHuman("3+0", driver)
+	playWithHuman("1+0", driver)
 
 	for {
 		time.Sleep(2 * time.Second)
@@ -95,7 +89,7 @@ func main() {
 			game := chess.NewGame()
 
 			if isMyTurn(move_list, is_white_orientation) {
-				move, err := getEngineBestMove(game, eng, move_list)
+				move, err := getEngineBestMove(game, move_list)
 				if err != nil {
 					log.Println("Can't get best move from engine: ", err)
 				} else {

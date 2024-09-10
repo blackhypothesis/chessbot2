@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
 	"log"
+	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/tebeka/selenium"
 )
 
@@ -114,4 +117,26 @@ func newOpponent(driver selenium.WebDriver) error {
 	}
 	new_opponent.Click()
 	return nil
+}
+
+type envVAR struct {
+	Login    string
+	Password string
+}
+
+func getENV() (envVAR, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return envVAR{}, err
+	}
+	login := os.Getenv("LOGIN")
+	if login == "" {
+		return envVAR{}, errors.New("LOGIN is not found in the ENV")
+	}
+	password := os.Getenv("PASSWORD")
+	if password == "" {
+		return envVAR{}, errors.New("PASSWORD is not found in the ENV")
+	}
+
+	return envVAR{Login: login, Password: password}, nil
 }
