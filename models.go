@@ -2,9 +2,9 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -12,10 +12,16 @@ import (
 	"time"
 
 	"github.com/go-vgo/robotgo"
+	"github.com/joho/godotenv"
 	"github.com/notnil/chess"
 	"github.com/notnil/chess/uci"
 	"github.com/tebeka/selenium"
 )
+
+type envVAR struct {
+	Login    string
+	Password string
+}
 
 type Lichess struct {
 	Url             string
@@ -160,7 +166,6 @@ func (lc *Lichess) NewGame() {
 func (lc *Lichess) IsPlayWithWhite(driver selenium.WebDriver) {
 	board_coords_class := ""
 	for {
-		log.Println("Trying to get board orientation")
 		board_coords, err := driver.FindElement(selenium.ByTagName, "coords")
 		if err != nil {
 			continue
@@ -456,6 +461,23 @@ func getCoordinate(x string) int {
 	return 0
 }
 
+func getENV() (envVAR, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return envVAR{}, err
+	}
+	login := os.Getenv("LOGIN")
+	if login == "" {
+		return envVAR{}, errors.New("LOGIN is not found in the ENV")
+	}
+	password := os.Getenv("PASSWORD")
+	if password == "" {
+		return envVAR{}, errors.New("PASSWORD is not found in the ENV")
+	}
+
+	return envVAR{Login: login, Password: password}, nil
+}
+
 func TimeTrack(start time.Time) {
 	elapsed := time.Since(start)
 
@@ -469,5 +491,5 @@ func TimeTrack(start time.Time) {
 	runtimeFunc := regexp.MustCompile(`^.*\.(.*)$`)
 	name := runtimeFunc.ReplaceAllString(funcObj.Name(), "$1")
 
-	log.Println(fmt.Sprintf("%s took %s", name, elapsed))
+	log.Printf("%s took %s", name, elapsed)
 }

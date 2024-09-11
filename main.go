@@ -73,7 +73,7 @@ func main() {
 			lc.NewGame()
 			moveList()
 
-			if lc.IsMyTurn(lc.PlayWithWhite) {
+			if lc.IsMyTurn(lc.PlayWithWhite) && len(lc.MoveList) > 8 {
 				err := lc.GetEngineBestMove()
 				if err != nil {
 					log.Println("Can't get best move from engine: ", err)
