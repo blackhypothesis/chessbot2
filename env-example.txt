@@ -1,0 +1,6 @@
+# copy this file to .env
+# cp env-example .env
+# replace ENV variables with your credentials
+
+LOGIN="my-login"
+PASSWORD="my-password"

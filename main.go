@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/notnil/chess"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
 )
@@ -56,8 +55,8 @@ func main() {
 		log.Fatal("Error: ", err)
 	}
 
-	// lc.PlayWithHuman(driver)
-	lc.PlayWithComputer(driver)
+	lc.PlayWithHuman(driver)
+	// lc.PlayWithComputer(driver)
 
 	for {
 		lc.IsPlayWithWhite(driver)
@@ -71,8 +70,8 @@ func main() {
 		}
 
 		for {
+			lc.NewGame()
 			moveList()
-			lc.Game = chess.NewGame()
 
 			if lc.IsMyTurn(lc.PlayWithWhite) {
 				err := lc.GetEngineBestMove()
@@ -93,6 +92,7 @@ func main() {
 				log.Println("Game State: ", lc.GameState)
 				time.Sleep(3 * time.Second)
 				lc.NewOpponent(driver)
+				break
 			}
 
 		}

@@ -47,6 +47,7 @@ type ChessBot interface {
 	SignIn(selenium.WebDriver) error
 	PlayWithHuman(string, selenium.WebDriver) error
 	PlayWithComputer(selenium.WebDriver) error
+	NewGame()
 	CheckIsPlayWithWhite(selenium.WebDriver) bool
 	GetMoveList(selenium.WebDriver) func() []string
 	IsMyTurn(bool) bool
@@ -149,6 +150,11 @@ func (lc *Lichess) PlayWithComputer(driver selenium.WebDriver) error {
 	}
 	bw.Click()
 	return nil
+}
+
+func (lc *Lichess) NewGame() {
+	// lc.MoveList = nil
+	lc.Game = chess.NewGame()
 }
 
 func (lc *Lichess) IsPlayWithWhite(driver selenium.WebDriver) {
@@ -278,19 +284,24 @@ func (lc *Lichess) GetTimeLeftSeconds(driver selenium.WebDriver) error {
 	if err != nil {
 		return err
 	}
-	time_opponent, _ := time_left[0].Text()
-	time_self, _ := time_left[1].Text()
-	time_opponent_minutes_seconds := strings.Split(strings.Replace(time_opponent, "\n", "", -1), ":")
-	time_self_minutes_seconds := strings.Split(strings.Replace(time_self, "\n", "", -1), ":")
+	// sometimes it crashe, because of:
+	//   panic: runtime error: index out of range [0] with length 0
+	// therefore check if len is 2
+	if len(time_left) == 2 {
+		time_opponent, _ := time_left[0].Text()
+		time_self, _ := time_left[1].Text()
+		time_opponent_minutes_seconds := strings.Split(strings.Replace(time_opponent, "\n", "", -1), ":")
+		time_self_minutes_seconds := strings.Split(strings.Replace(time_self, "\n", "", -1), ":")
 
-	time_opponent_minutes, _ := strconv.Atoi(time_opponent_minutes_seconds[0])
-	time_opponent_seconds, _ := strconv.Atoi(time_opponent_minutes_seconds[1])
-	time_self_minutes, _ := strconv.Atoi(time_self_minutes_seconds[0])
-	time_self_seconds, _ := strconv.Atoi(time_self_minutes_seconds[1])
-	time_opponent_secs := 60*time_opponent_minutes + time_opponent_seconds
-	time_self_secs := 60*time_self_minutes + time_self_seconds
+		time_opponent_minutes, _ := strconv.Atoi(time_opponent_minutes_seconds[0])
+		time_opponent_seconds, _ := strconv.Atoi(time_opponent_minutes_seconds[1])
+		time_self_minutes, _ := strconv.Atoi(time_self_minutes_seconds[0])
+		time_self_seconds, _ := strconv.Atoi(time_self_minutes_seconds[1])
+		time_opponent_secs := 60*time_opponent_minutes + time_opponent_seconds
+		time_self_secs := 60*time_self_minutes + time_self_seconds
 
-	lc.TimeLeftSeconds = [2]int{time_self_secs, time_opponent_secs}
+		lc.TimeLeftSeconds = [2]int{time_self_secs, time_opponent_secs}
+	}
 	return nil
 }
 
