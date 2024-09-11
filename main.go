@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"regexp"
-	"runtime"
 	"time"
 
 	"github.com/notnil/chess"
@@ -13,12 +11,20 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+	lc := new(Lichess)
+	lc.Url = "https://lichess.org"
 	env, err := getENV()
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
-	log.Println("Login: ", env.Login, "  Password: ", env.Password)
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
+	lc.Url = "https://lichess.org"
+	lc.UserName = env.Login
+	lc.Password = env.Password
+	lc.TimeControl = "1+0"
+
+	log.Println("Login: ", lc.UserName, "  Password: ", lc.Password)
 
 	service, err := selenium.NewChromeDriverService("./chromedriver-linux64/chromedriver", 4444)
 	if err != nil {
@@ -45,87 +51,50 @@ func main() {
 		log.Fatal("Error: ", err)
 	}
 
-	err = driver.Get("https:lichess.org/")
+	err = driver.Get(lc.Url)
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
 
-	time.Sleep(2 * time.Second)
-	// playWithComputer(driver)
-	// err = signIn(env.Login, env.Password, driver)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	time.Sleep(2 * time.Second)
-	playWithHuman("1+0", driver)
+	// lc.PlayWithHuman(driver)
+	lc.PlayWithComputer(driver)
 
 	for {
-		time.Sleep(2 * time.Second)
-		is_white_orientation := true
-
-		for {
-			is_white_orientation, err = isWhiteOrientation(driver)
-			if err != nil {
-				log.Println("IsWhiteOrientation Error: ", err)
-				log.Println("Will retry to get orientation, ...")
-			} else {
-				break
-			}
-		}
-
-		// get closure function to play moves
-		playMove, err := playMoveWithMouse(driver, is_white_orientation)
+		lc.IsPlayWithWhite(driver)
+		moveList := lc.GetMoveList(driver)
 		if err != nil {
 			log.Fatal(err)
 		}
-		// get closure function to get move list
-		moveList := getMoveList(driver)
+		playMove, err := lc.PlayMoveWithMouse(driver)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		for {
-			move_list := moveList()
-			game := chess.NewGame()
+			moveList()
+			lc.Game = chess.NewGame()
 
-			if isMyTurn(move_list, is_white_orientation) {
-				move, err := getEngineBestMove(game, move_list)
+			if lc.IsMyTurn(lc.PlayWithWhite) {
+				err := lc.GetEngineBestMove()
 				if err != nil {
 					log.Println("Can't get best move from engine: ", err)
 				} else {
-					time_left_seconds, err := getTimeLeftSeconds(driver)
+					err := lc.GetTimeLeftSeconds(driver)
 					if err != nil {
 						log.Println("Can't get time left")
 					}
-					playMove(move.String(), len(move_list), time_left_seconds)
-				}
-				if err != nil {
-					log.Println("Can't get time left")
+					fmt.Println("movelist: ", lc.MoveList)
+					fmt.Println("bestmove: ", lc.BestMove)
+					playMove(lc.BestMove.String(), len(lc.MoveList), lc.TimeLeftSeconds)
 				}
 			}
-			game_state := getGameState(driver)
-			if game_state != "ongoing" {
-				log.Println("Game State: ", game_state)
-				time.Sleep(4 * time.Second)
-				newOpponent(driver)
-				break
+			lc.GetGameState(driver)
+			if lc.GameState != "ongoing" {
+				log.Println("Game State: ", lc.GameState)
+				time.Sleep(3 * time.Second)
+				lc.NewOpponent(driver)
 			}
+
 		}
 	}
-}
-
-func TimeTrack(start time.Time) {
-	elapsed := time.Since(start)
-
-	// Skip this function, and fetch the PC and file for its parent.
-	pc, _, _, _ := runtime.Caller(1)
-
-	// Retrieve a function object this functions parent.
-	funcObj := runtime.FuncForPC(pc)
-
-	// Regex to extract just the function name (and not the module path).
-	runtimeFunc := regexp.MustCompile(`^.*\.(.*)$`)
-	name := runtimeFunc.ReplaceAllString(funcObj.Name(), "$1")
-
-	log.Println(fmt.Sprintf("%s took %s", name, elapsed))
 }

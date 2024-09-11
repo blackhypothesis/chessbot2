@@ -1,8 +1,12 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +23,7 @@ type Lichess struct {
 	Password        string
 	TimeControl     string
 	MoveList        []string
-	IsPlayWithWhite bool
+	PlayWithWhite   bool
 	Game            *chess.Game
 	BestMove        *chess.Move
 	TimeLeftSeconds [2]int
@@ -42,6 +46,7 @@ type ChessCom struct {
 type ChessBot interface {
 	SignIn(selenium.WebDriver) error
 	PlayWithHuman(string, selenium.WebDriver) error
+	PlayWithComputer(selenium.WebDriver) error
 	CheckIsPlayWithWhite(selenium.WebDriver) bool
 	GetMoveList(selenium.WebDriver) func() []string
 	IsMyTurn(bool) bool
@@ -49,6 +54,7 @@ type ChessBot interface {
 	GetTimeLeftSeconds(selenium.WebDriver)
 	PlayMoveWithMouse(selenium.WebDriver) (func(string, int, [2]int), error)
 	GetGameState() func(selenium.WebDriver)
+	NewOpponent(selenium.WebDriver) error
 }
 
 func (lc *Lichess) SignIn(driver selenium.WebDriver) error {
@@ -86,6 +92,7 @@ func (lc *Lichess) SignIn(driver selenium.WebDriver) error {
 }
 
 func (lc *Lichess) PlayWithHuman(driver selenium.WebDriver) error {
+	time.Sleep(2 * time.Second)
 	time_settings, err := driver.FindElements(selenium.ByClassName, "clock")
 	if err != nil {
 		return err
@@ -99,28 +106,69 @@ func (lc *Lichess) PlayWithHuman(driver selenium.WebDriver) error {
 		time_settings[2].Click()
 	case "3+2":
 		time_settings[3].Click()
+	default:
+		return errors.New("timecontrol does not exist")
 	}
 	return nil
 }
 
-func (lc *Lichess) CheckIsPlayWithWhite(driver selenium.WebDriver) bool {
+func (lc *Lichess) PlayWithComputer(driver selenium.WebDriver) error {
+	// Button [PLAY WITH COMPUTER]
+	button, err := driver.FindElement(selenium.ByClassName, "config_ai")
+	if err != nil {
+		return err
+	}
+	button.Click()
+	time.Sleep(500 * time.Millisecond)
+
+	// Button Strength [8]
+	level, err := driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[3]/div[1]/group/div[8]/label")
+	if err != nil {
+		return err
+	}
+	level.Click()
+	time.Sleep(500 * time.Millisecond)
+
+	// Dropdown Time Control
+	tc, _ := driver.FindElement(selenium.ByID, "sf_timeMode")
+	if err != nil {
+		return err
+	}
+	tcv, err := tc.FindElements(selenium.ByTagName, "option")
+	if err != nil {
+		return err
+	}
+	// Real Time (first option in dropdown)
+	tcv[0].Click()
+	time.Sleep(500 * time.Millisecond)
+
+	// Button [white/black]
+	bw, err := driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[4]/button[2]")
+	if err != nil {
+		return err
+	}
+	bw.Click()
+	return nil
+}
+
+func (lc *Lichess) IsPlayWithWhite(driver selenium.WebDriver) {
+	board_coords_class := ""
 	for {
 		log.Println("Trying to get board orientation")
 		board_coords, err := driver.FindElement(selenium.ByTagName, "coords")
 		if err != nil {
 			continue
 		}
-		board_coords_class, err := board_coords.GetAttribute("class")
+		board_coords_class, err = board_coords.GetAttribute("class")
 		if err != nil {
 			continue
 		}
-		if board_coords_class == "ranks black" {
-			lc.IsPlayWithWhite = false
-			return false
-		} else {
-			lc.IsPlayWithWhite = true
-			return true
-		}
+		break
+	}
+	if board_coords_class == "ranks black" {
+		lc.PlayWithWhite = false
+	} else {
+		lc.PlayWithWhite = true
 	}
 }
 
@@ -284,7 +332,7 @@ func (lc *Lichess) PlayMoveWithMouse(driver selenium.WebDriver) (func(move strin
 		piece_end.Y, _ = strconv.Atoi(m[3])
 		piece_start.Y--
 		piece_end.Y--
-		if !lc.IsPlayWithWhite {
+		if !lc.PlayWithWhite {
 			piece_start.X = 7 - piece_start.X
 			piece_start.Y = 7 - piece_start.Y
 			piece_end.X = 7 - piece_end.X
@@ -357,12 +405,22 @@ func (lc *Lichess) GetGameState(driver selenium.WebDriver) {
 	game_state, err := driver.FindElement(selenium.ByClassName, "result")
 	if err != nil {
 		lc.GameState = "ongoing"
+		return
 	}
 	state, err := game_state.Text()
 	if err != nil {
 		lc.GameState = "unknown"
 	}
 	lc.GameState = state
+}
+
+func (lc *Lichess) NewOpponent(driver selenium.WebDriver) error {
+	new_opponent, err := driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[5]/div/a[1]`) // New opponent
+	if err != nil {
+		return err
+	}
+	new_opponent.Click()
+	return nil
 }
 
 func getCoordinate(x string) int {
@@ -385,4 +443,20 @@ func getCoordinate(x string) int {
 		return 7
 	}
 	return 0
+}
+
+func TimeTrack(start time.Time) {
+	elapsed := time.Since(start)
+
+	// Skip this function, and fetch the PC and file for its parent.
+	pc, _, _, _ := runtime.Caller(1)
+
+	// Retrieve a function object this functions parent.
+	funcObj := runtime.FuncForPC(pc)
+
+	// Regex to extract just the function name (and not the module path).
+	runtimeFunc := regexp.MustCompile(`^.*\.(.*)$`)
+	name := runtimeFunc.ReplaceAllString(funcObj.Name(), "$1")
+
+	log.Println(fmt.Sprintf("%s took %s", name, elapsed))
 }
