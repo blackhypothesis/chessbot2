@@ -1,21 +1,23 @@
-module github.com/blackhypothesis/chessbot
+module github.com/blackhypothesis/chessbot/lichess
 
 go 1.22.6
 
-require github.com/tebeka/selenium v0.9.9
+require (
+	github.com/go-vgo/robotgo v0.110.2
+	github.com/joho/godotenv v1.5.1
+	github.com/notnil/chess v1.9.0
+	github.com/tebeka/selenium v0.9.9
+)
 
 require (
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/dblohm7/wingoes v0.0.0-20231019175336-f6e33aa7cc34 // indirect
 	github.com/gen2brain/shm v0.0.0-20230802011745-f2460f5984f7 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/go-vgo/robotgo v0.110.2 // indirect
 	github.com/jezek/xgb v1.1.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kbinani/screenshot v0.0.0-20230812210009-b87d31814237 // indirect
 	github.com/lufia/plan9stats v0.0.0-20230326075908-cb1d2100619a // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
-	github.com/notnil/chess v1.9.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20221212215047-62379fc7944b // indirect
 	github.com/robotn/xgb v0.0.0-20190912153532-2cb92d044934 // indirect
 	github.com/robotn/xgbutil v0.0.0-20190912154524-c861d6f87770 // indirect
