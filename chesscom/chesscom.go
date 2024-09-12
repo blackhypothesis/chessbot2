@@ -45,7 +45,7 @@ func New() (*Lichess, error) {
 		log.Fatal("Error: ", err)
 	}
 	return &Lichess{
-		Url:         "https://lichess.org",
+		Url:         "https://chess.com",
 		UserName:    env.Login,
 		Password:    env.Password,
 		TimeControl: "1+0",
@@ -55,7 +55,7 @@ func New() (*Lichess, error) {
 /*
  * START implementation of interface chessOnline
  */
-func (lc *Lichess) ConnectToSite() error {
+func (cc *Lichess) ConnectToSite() error {
 	service, err := selenium.NewChromeDriverService("./chromedriver-linux64/chromedriver", 4444)
 	if err != nil {
 		return err
@@ -79,64 +79,33 @@ func (lc *Lichess) ConnectToSite() error {
 		return err
 	}
 
-	log.Println("Connecting to: ", lc.Url)
-	err = driver.Get(lc.Url)
+	log.Println("Connecting to: ", cc.Url)
+	err = driver.Get(cc.Url)
 	if err != nil {
 		return err
 	}
 
-	lc.Service = service
-	lc.Driver = driver
+	cc.Service = service
+	cc.Driver = driver
 
 	return nil
 }
 
-func (lc *Lichess) ServiceStop() {
-	lc.Service.Stop()
+func (cc *Lichess) ServiceStop() {
+	cc.Service.Stop()
 }
 
-func (lc *Lichess) SignIn() error {
-	log.Println("Login: ", lc.UserName, "  Password: ", lc.Password)
-	sign_in, err := lc.Driver.FindElement(selenium.ByClassName, "signin")
-	if err != nil {
-		return err
-	}
-	sign_in.Click()
-
-	time.Sleep(1 * time.Second)
-
-	form_username, err := lc.Driver.FindElement(selenium.ByID, "form3-username")
-	if err != nil {
-		return err
-	}
-	form_password, err := lc.Driver.FindElement(selenium.ByID, "form3-password")
-	if err != nil {
-		return err
-	}
-	button_submit, err := lc.Driver.FindElement(selenium.ByClassName, "submit")
-	if err != nil {
-		return err
-	}
-	log.Println("Login with: ", lc.UserName, lc.Password)
-	form_username.Clear()
-	form_username.SendKeys(lc.UserName)
-	time.Sleep(1 * time.Second)
-
-	form_password.Clear()
-	form_password.SendKeys(lc.Password)
-	time.Sleep(1 * time.Second)
-	button_submit.Click()
-
+func (cc *Lichess) SignIn() error {
 	return nil
 }
 
-func (lc *Lichess) PlayWithHuman() error {
+func (cc *Lichess) PlayWithHuman() error {
 	time.Sleep(2 * time.Second)
-	time_settings, err := lc.Driver.FindElements(selenium.ByClassName, "clock")
+	time_settings, err := cc.Driver.FindElements(selenium.ByClassName, "clock")
 	if err != nil {
 		return err
 	}
-	switch lc.TimeControl {
+	switch cc.TimeControl {
 	case "1+0":
 		time_settings[0].Click()
 	case "2+1":
@@ -151,9 +120,9 @@ func (lc *Lichess) PlayWithHuman() error {
 	return nil
 }
 
-func (lc *Lichess) PlayWithComputer() error {
+func (cc *Lichess) PlayWithComputer() error {
 	// Button [PLAY WITH COMPUTER]
-	button, err := lc.Driver.FindElement(selenium.ByClassName, "config_ai")
+	button, err := cc.Driver.FindElement(selenium.ByClassName, "config_ai")
 	if err != nil {
 		return err
 	}
@@ -161,7 +130,7 @@ func (lc *Lichess) PlayWithComputer() error {
 	time.Sleep(500 * time.Millisecond)
 
 	// Button Strength [8]
-	level, err := lc.Driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[3]/div[1]/group/div[8]/label")
+	level, err := cc.Driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[3]/div[1]/group/div[8]/label")
 	if err != nil {
 		return err
 	}
@@ -169,7 +138,7 @@ func (lc *Lichess) PlayWithComputer() error {
 	time.Sleep(500 * time.Millisecond)
 
 	// Dropdown Time Control
-	tc, err := lc.Driver.FindElement(selenium.ByID, "sf_timeMode")
+	tc, err := cc.Driver.FindElement(selenium.ByID, "sf_timeMode")
 	if err != nil {
 		return err
 	}
@@ -182,7 +151,7 @@ func (lc *Lichess) PlayWithComputer() error {
 	time.Sleep(500 * time.Millisecond)
 
 	// Button [white/black]
-	bw, err := lc.Driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[4]/button[2]")
+	bw, err := cc.Driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[4]/button[2]")
 	if err != nil {
 		return err
 	}
@@ -190,15 +159,15 @@ func (lc *Lichess) PlayWithComputer() error {
 	return nil
 }
 
-func (lc *Lichess) NewGame() {
-	// lc.MoveList = nil
-	lc.Game = chess.NewGame()
+func (cc *Lichess) NewGame() {
+	// cc.MoveList = nil
+	cc.Game = chess.NewGame()
 }
 
-func (lc *Lichess) IsPlayWithWhite() {
+func (cc *Lichess) IsPlayWithWhite() {
 	board_coords_class := ""
 	for {
-		board_coords, err := lc.Driver.FindElement(selenium.ByTagName, "coords")
+		board_coords, err := cc.Driver.FindElement(selenium.ByTagName, "coords")
 		if err != nil {
 			continue
 		}
@@ -209,19 +178,19 @@ func (lc *Lichess) IsPlayWithWhite() {
 		break
 	}
 	if board_coords_class == "ranks black" {
-		lc.PlayWithWhite = false
+		cc.PlayWithWhite = false
 	} else {
-		lc.PlayWithWhite = true
+		cc.PlayWithWhite = true
 	}
 }
 
-func (lc *Lichess) UpdateMoveList() func() {
+func (cc *Lichess) UpdateMoveList() func() {
 	defer TimeTrack(time.Now())
 	move_list := []string{}
 	last_move_list_len := 0
 
 	return func() {
-		move_list_container, err := lc.Driver.FindElements(selenium.ByTagName, "kwdb")
+		move_list_container, err := cc.Driver.FindElements(selenium.ByTagName, "kwdb")
 		if err != nil {
 			log.Println("Can't get move list container")
 		}
@@ -236,26 +205,26 @@ func (lc *Lichess) UpdateMoveList() func() {
 			move_list = append(move_list, move)
 		}
 		last_move_list_len = len(move_list)
-		lc.MoveList = move_list
+		cc.MoveList = move_list
 	}
 }
 
-func (lc *Lichess) IsMyTurn(is_white_orientation bool) bool {
+func (cc *Lichess) IsMyTurn(is_white_orientation bool) bool {
 	// we play with white
-	if len(lc.MoveList)%2 == 0 && is_white_orientation {
+	if len(cc.MoveList)%2 == 0 && is_white_orientation {
 		return true
 	}
 	// we play with black
-	if len(lc.MoveList)%2 == 1 && !is_white_orientation {
+	if len(cc.MoveList)%2 == 1 && !is_white_orientation {
 		return true
 	}
 	return false
 }
 
-func (lc *Lichess) CalculateEngineBestMove() error {
+func (cc *Lichess) CacculateEngineBestMove() error {
 	// defer TimeTrack(time.Now())
 
-	lc.Game = chess.NewGame()
+	cc.Game = chess.NewGame()
 	eng, err := uci.New("stockfish")
 	if err != nil {
 		return err
@@ -266,8 +235,8 @@ func (lc *Lichess) CalculateEngineBestMove() error {
 	}
 	defer eng.Close()
 
-	for _, move := range lc.MoveList {
-		if err := lc.Game.MoveStr(move); err != nil {
+	for _, move := range cc.MoveList {
+		if err := cc.Game.MoveStr(move); err != nil {
 			log.Println("Loading moves: ", err)
 		}
 	}
@@ -284,10 +253,10 @@ func (lc *Lichess) CalculateEngineBestMove() error {
 	}
 
 	depth := 21
-	if len(lc.MoveList) > 60 {
+	if len(cc.MoveList) > 60 {
 		depth = 16
 	}
-	cmdPos := uci.CmdPosition{Position: lc.Game.Position()}
+	cmdPos := uci.CmdPosition{Position: cc.Game.Position()}
 	cmdGo := uci.CmdGo{
 		Depth:    depth,
 		MoveTime: 1000 * time.Millisecond,
@@ -311,12 +280,12 @@ func (lc *Lichess) CalculateEngineBestMove() error {
 	log.Println("Info: Time:                ", search_resultes.Info.Time)
 	log.Println("---------------------------------------------------------------------------------------------------------")
 
-	lc.BestMove = move
+	cc.BestMove = move
 	return nil
 }
 
-func (lc *Lichess) CalculateTimeLeftSeconds() error {
-	time_left, err := lc.Driver.FindElements(selenium.ByClassName, "time")
+func (cc *Lichess) CacculateTimeLeftSeconds() error {
+	time_left, err := cc.Driver.FindElements(selenium.ByClassName, "time")
 	if err != nil {
 		return err
 	}
@@ -336,14 +305,14 @@ func (lc *Lichess) CalculateTimeLeftSeconds() error {
 		time_opponent_secs := 60*time_opponent_minutes + time_opponent_seconds
 		time_self_secs := 60*time_self_minutes + time_self_seconds
 
-		lc.TimeLeftSeconds = [2]int{time_self_secs, time_opponent_secs}
+		cc.TimeLeftSeconds = [2]int{time_self_secs, time_opponent_secs}
 	}
 	return nil
 }
 
-func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, time_left_seconds [2]int), error) {
+func (cc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, time_left_seconds [2]int), error) {
 	defer TimeTrack(time.Now())
-	cg_board, err := lc.Driver.FindElement(selenium.ByTagName, "cg-board")
+	cg_board, err := cc.Driver.FindElement(selenium.ByTagName, "cg-board")
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +348,7 @@ func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 		piece_end.Y, _ = strconv.Atoi(m[3])
 		piece_start.Y--
 		piece_end.Y--
-		if !lc.PlayWithWhite {
+		if !cc.PlayWithWhite {
 			piece_start.X = 7 - piece_start.X
 			piece_start.Y = 7 - piece_start.Y
 			piece_end.X = 7 - piece_end.X
@@ -422,7 +391,7 @@ func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 		robotgo.Click("left")
 
 		// piece promotion
-		// calculate the field to click, to promote the pawn to the desired piece
+		// cacculate the field to click, to promote the pawn to the desired piece
 		if len(m) == 5 {
 			promotion_click_square := new(selenium.Point)
 			promotion_click_square.X = piece_end.X
@@ -448,21 +417,21 @@ func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 	}, nil
 }
 
-func (lc *Lichess) GetGameState() string {
-	game_state, err := lc.Driver.FindElement(selenium.ByClassName, "result")
+func (cc *Lichess) GetGameState() string {
+	game_state, err := cc.Driver.FindElement(selenium.ByClassName, "result")
 	if err != nil {
-		lc.GameState = "ongoing"
+		cc.GameState = "ongoing"
 	}
 	state, err := game_state.Text()
 	if err != nil {
-		lc.GameState = "unknown"
+		cc.GameState = "unknown"
 	}
-	lc.GameState = state
-	return lc.GameState
+	cc.GameState = state
+	return cc.GameState
 }
 
-func (lc *Lichess) NewOpponent() error {
-	new_opponent, err := lc.Driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[5]/div/a[1]`) // New opponent
+func (cc *Lichess) NewOpponent() error {
+	new_opponent, err := cc.Driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[5]/div/a[1]`) // New opponent
 	if err != nil {
 		return err
 	}
@@ -471,17 +440,17 @@ func (lc *Lichess) NewOpponent() error {
 }
 
 // getter functions
-func (lc *Lichess) GetPlayWithWhite() bool {
-	return lc.PlayWithWhite
+func (cc *Lichess) GetPlayWithWhite() bool {
+	return cc.PlayWithWhite
 }
-func (lc *Lichess) GetMoveList() []string {
-	return lc.MoveList
+func (cc *Lichess) GetMoveList() []string {
+	return cc.MoveList
 }
-func (lc *Lichess) GetBestMove() string {
-	return lc.BestMove.String()
+func (cc *Lichess) GetBestMove() string {
+	return cc.BestMove.String()
 }
-func (lc *Lichess) GetTimeLeftSeconds() [2]int {
-	return lc.TimeLeftSeconds
+func (cc *Lichess) GetTimeLeftSeconds() [2]int {
+	return cc.TimeLeftSeconds
 }
 
 /*
