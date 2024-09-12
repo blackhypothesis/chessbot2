@@ -1,17 +1,22 @@
 package main
 
 type chessOnline interface {
-	// ConnectToSite() error
+	ConnectToSite() error
+	ServiceStop()
 	SignIn() error
 	PlayWithHuman() error
 	PlayWithComputer() error
 	NewGame()
 	IsPlayWithWhite()
-	GetMoveList() func() []string
+	UpdateMoveList() func()
 	IsMyTurn(bool) bool
-	GetEngineBestMove() error
-	GetTimeLeftSeconds() error
+	CalculateEngineBestMove() error
+	CalculateTimeLeftSeconds() error
 	PlayMoveWithMouse() (func(string, int, [2]int), error)
-	GetGameState()
+	GetGameState() string
 	NewOpponent() error
+	GetPlayWithWhite() bool
+	GetMoveList() []string
+	GetBestMove() string
+	GetTimeLeftSeconds() [2]int
 }

@@ -3,8 +3,6 @@ package main
 import (
 	"log"
 	"time"
-
-	"github.com/tebeka/selenium"
 )
 
 type ChessBot struct {
@@ -15,42 +13,57 @@ func NewChessBot(co chessOnline) *ChessBot {
 	return &ChessBot{co: co}
 }
 
-func (cb ChessBot) Run(driver selenium.WebDriver) {
-	cb.co.PlayWithHuman()
-	// lc.PlayWithComputer(driver)
+func (cb ChessBot) Run() {
+	err := cb.co.ConnectToSite()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cb.co.ServiceStop()
+
+	err = cb.co.PlayWithHuman()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = cb.co.PlayWithComputer()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for {
 		cb.co.IsPlayWithWhite()
-		moveList := cb.co.GetMoveList()
+
+		// get closure functions
+		updateMoveList := cb.co.UpdateMoveList()
 		playMove, err := cb.co.PlayMoveWithMouse()
+
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		for {
 			cb.co.NewGame()
-			moveList()
+			updateMoveList()
 
-			if cb.co.IsMyTurn(cb.co.PlayWithWhite) && len(lc.MoveList) > 8 {
-				err := lc.GetEngineBestMove()
+			if cb.co.IsMyTurn(cb.co.GetPlayWithWhite()) && len(cb.co.GetMoveList()) > 8 {
+				err := cb.co.CalculateEngineBestMove()
 				if err != nil {
 					log.Println("Can't get best move from engine: ", err)
 				} else {
-					err := lc.GetTimeLeftSeconds(driver)
+					err := cb.co.CalculateTimeLeftSeconds()
 					if err != nil {
 						log.Println("Can't get time left")
 					}
-					playMove(lc.BestMove.String(), len(lc.MoveList), lc.TimeLeftSeconds)
+					playMove(cb.co.GetBestMove(), len(cb.co.GetMoveList()), cb.co.GetTimeLeftSeconds())
 				}
 			}
-			lc.GetGameState(driver)
-			if lc.GameState != "ongoing" {
-				log.Println("Game State: ", lc.GameState)
+			cb.co.GetGameState()
+			if cb.co.GetGameState() != "ongoing" {
+				log.Println("Game State: ", cb.co.GetGameState())
 				time.Sleep(3 * time.Second)
-				lc.NewOpponent(driver)
+				cb.co.NewOpponent()
 				break
 			}
-
 		}
 	}
 }

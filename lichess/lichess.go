@@ -41,17 +41,18 @@ type Lichess struct {
 
 func New() (*Lichess, error) {
 	return &Lichess{
-		Url: "http://lichess.org",
+		Url: "https://lichess.org",
 	}, nil
 }
 
+/*
+ * START implementation of interface chessOnline
+ */
 func (lc *Lichess) ConnectToSite() error {
 	service, err := selenium.NewChromeDriverService("./chromedriver-linux64/chromedriver", 4444)
 	if err != nil {
 		return err
 	}
-
-	defer service.Stop()
 
 	//configure browser options
 	caps := selenium.Capabilities{}
@@ -71,6 +72,7 @@ func (lc *Lichess) ConnectToSite() error {
 		return err
 	}
 
+	log.Println("Connecting to: ", lc.Url)
 	err = driver.Get(lc.Url)
 	if err != nil {
 		return err
@@ -80,6 +82,10 @@ func (lc *Lichess) ConnectToSite() error {
 	lc.Driver = driver
 
 	return nil
+}
+
+func (lc *Lichess) ServiceStop() {
+	lc.Service.Stop()
 }
 
 func (lc *Lichess) SignIn() error {
@@ -164,7 +170,7 @@ func (lc *Lichess) PlayWithComputer() error {
 	time.Sleep(500 * time.Millisecond)
 
 	// Dropdown Time Control
-	tc, _ := lc.Driver.FindElement(selenium.ByID, "sf_timeMode")
+	tc, err := lc.Driver.FindElement(selenium.ByID, "sf_timeMode")
 	if err != nil {
 		return err
 	}
@@ -210,15 +216,15 @@ func (lc *Lichess) IsPlayWithWhite() {
 	}
 }
 
-func (lc *Lichess) GetMoveList() func() []string {
+func (lc *Lichess) UpdateMoveList() func() {
 	defer TimeTrack(time.Now())
 	move_list := []string{}
 	last_move_list_len := 0
 
-	return func() []string {
+	return func() {
 		move_list_container, err := lc.Driver.FindElements(selenium.ByTagName, "kwdb")
 		if err != nil {
-			return move_list
+			log.Println("Can't get move list container")
 		}
 		move_list_container_len := len(move_list_container)
 		number_new_moves := move_list_container_len - last_move_list_len
@@ -226,13 +232,12 @@ func (lc *Lichess) GetMoveList() func() []string {
 			move_element := move_list_container[len(move_list_container)-move_index]
 			move, err := move_element.Text()
 			if err != nil {
-				return move_list
+				log.Println("Can't decode move: move index: ", move_index)
 			}
 			move_list = append(move_list, move)
 		}
 		last_move_list_len = len(move_list)
 		lc.MoveList = move_list
-		return move_list
 	}
 }
 
@@ -248,7 +253,7 @@ func (lc *Lichess) IsMyTurn(is_white_orientation bool) bool {
 	return false
 }
 
-func (lc *Lichess) GetEngineBestMove() error {
+func (lc *Lichess) CalculateEngineBestMove() error {
 	// defer TimeTrack(time.Now())
 
 	lc.Game = chess.NewGame()
@@ -311,7 +316,7 @@ func (lc *Lichess) GetEngineBestMove() error {
 	return nil
 }
 
-func (lc *Lichess) GetTimeLeftSeconds() error {
+func (lc *Lichess) CalculateTimeLeftSeconds() error {
 	time_left, err := lc.Driver.FindElements(selenium.ByClassName, "time")
 	if err != nil {
 		return err
@@ -444,17 +449,17 @@ func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 	}, nil
 }
 
-func (lc *Lichess) GetGameState() {
+func (lc *Lichess) GetGameState() string {
 	game_state, err := lc.Driver.FindElement(selenium.ByClassName, "result")
 	if err != nil {
 		lc.GameState = "ongoing"
-		return
 	}
 	state, err := game_state.Text()
 	if err != nil {
 		lc.GameState = "unknown"
 	}
 	lc.GameState = state
+	return lc.GameState
 }
 
 func (lc *Lichess) NewOpponent() error {
@@ -466,6 +471,27 @@ func (lc *Lichess) NewOpponent() error {
 	return nil
 }
 
+// getter functions
+func (lc *Lichess) GetPlayWithWhite() bool {
+	return lc.PlayWithWhite
+}
+func (lc *Lichess) GetMoveList() []string {
+	return lc.MoveList
+}
+func (lc *Lichess) GetBestMove() string {
+	return lc.BestMove.String()
+}
+func (lc *Lichess) GetTimeLeftSeconds() [2]int {
+	return lc.TimeLeftSeconds
+}
+
+/*
+ * END implementation of interface chessOnline
+ */
+
+/*
+ * helper functions
+ */
 func getCoordinate(x string) int {
 	switch x {
 	case "a":

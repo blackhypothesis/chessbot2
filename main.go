@@ -1,8 +1,20 @@
 package main
 
-import "github.com/blackhypothesis/chessbot/lichess"
+import (
+	"log"
+
+	"github.com/blackhypothesis/chessbot/lichess"
+)
 
 func main() {
-	lichess.New()
+	lc, err := lichess.New()
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	log.Println(lc)
+
+	chess_bot := NewChessBot(lc)
+
+	chess_bot.Run()
 }

@@ -5,6 +5,7 @@ go 1.22.6
 require github.com/tebeka/selenium v0.9.9
 
 require (
+	github.com/blackhypothesis/chessbot/lichess v0.0.0-00010101000000-000000000000 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/dblohm7/wingoes v0.0.0-20231019175336-f6e33aa7cc34 // indirect
 	github.com/gen2brain/shm v0.0.0-20230802011745-f2460f5984f7 // indirect
