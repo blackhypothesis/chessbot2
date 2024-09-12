@@ -1,7 +1,8 @@
-package lichess
+package chesscom
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -24,7 +25,7 @@ type envVAR struct {
 	Password string
 }
 
-type Lichess struct {
+type Chesscom struct {
 	Url             string
 	UserName        string
 	Password        string
@@ -39,12 +40,12 @@ type Lichess struct {
 	Driver          selenium.WebDriver
 }
 
-func New() (*Lichess, error) {
+func New() (*Chesscom, error) {
 	env, err := getENV()
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
-	return &Lichess{
+	return &Chesscom{
 		Url:         "https://chess.com",
 		UserName:    env.Login,
 		Password:    env.Password,
@@ -55,7 +56,7 @@ func New() (*Lichess, error) {
 /*
  * START implementation of interface chessOnline
  */
-func (cc *Lichess) ConnectToSite() error {
+func (cc *Chesscom) ConnectToSite() error {
 	service, err := selenium.NewChromeDriverService("./chromedriver-linux64/chromedriver", 4444)
 	if err != nil {
 		return err
@@ -91,36 +92,26 @@ func (cc *Lichess) ConnectToSite() error {
 	return nil
 }
 
-func (cc *Lichess) ServiceStop() {
+func (cc *Chesscom) ServiceStop() {
 	cc.Service.Stop()
 }
 
-func (cc *Lichess) SignIn() error {
+func (cc *Chesscom) SignIn() error {
 	return nil
 }
 
-func (cc *Lichess) PlayWithHuman() error {
+func (cc *Chesscom) PlayWithHuman() error {
 	time.Sleep(2 * time.Second)
-	time_settings, err := cc.Driver.FindElements(selenium.ByClassName, "clock")
+	play_url := fmt.Sprintf("%s/play/online", cc.Url)
+	log.Println("Connecting to: ", play_url)
+	err := cc.Driver.Get(cc.Url)
 	if err != nil {
 		return err
 	}
-	switch cc.TimeControl {
-	case "1+0":
-		time_settings[0].Click()
-	case "2+1":
-		time_settings[1].Click()
-	case "3+0":
-		time_settings[2].Click()
-	case "3+2":
-		time_settings[3].Click()
-	default:
-		return errors.New("timecontrol does not exist")
-	}
 	return nil
 }
 
-func (cc *Lichess) PlayWithComputer() error {
+func (cc *Chesscom) PlayWithComputer() error {
 	// Button [PLAY WITH COMPUTER]
 	button, err := cc.Driver.FindElement(selenium.ByClassName, "config_ai")
 	if err != nil {
@@ -159,12 +150,12 @@ func (cc *Lichess) PlayWithComputer() error {
 	return nil
 }
 
-func (cc *Lichess) NewGame() {
+func (cc *Chesscom) NewGame() {
 	// cc.MoveList = nil
 	cc.Game = chess.NewGame()
 }
 
-func (cc *Lichess) IsPlayWithWhite() {
+func (cc *Chesscom) IsPlayWithWhite() {
 	board_coords_class := ""
 	for {
 		board_coords, err := cc.Driver.FindElement(selenium.ByTagName, "coords")
@@ -184,7 +175,7 @@ func (cc *Lichess) IsPlayWithWhite() {
 	}
 }
 
-func (cc *Lichess) UpdateMoveList() func() {
+func (cc *Chesscom) UpdateMoveList() func() {
 	defer TimeTrack(time.Now())
 	move_list := []string{}
 	last_move_list_len := 0
@@ -209,7 +200,7 @@ func (cc *Lichess) UpdateMoveList() func() {
 	}
 }
 
-func (cc *Lichess) IsMyTurn(is_white_orientation bool) bool {
+func (cc *Chesscom) IsMyTurn(is_white_orientation bool) bool {
 	// we play with white
 	if len(cc.MoveList)%2 == 0 && is_white_orientation {
 		return true
@@ -221,7 +212,7 @@ func (cc *Lichess) IsMyTurn(is_white_orientation bool) bool {
 	return false
 }
 
-func (cc *Lichess) CacculateEngineBestMove() error {
+func (cc *Chesscom) CalculateEngineBestMove() error {
 	// defer TimeTrack(time.Now())
 
 	cc.Game = chess.NewGame()
@@ -284,7 +275,7 @@ func (cc *Lichess) CacculateEngineBestMove() error {
 	return nil
 }
 
-func (cc *Lichess) CacculateTimeLeftSeconds() error {
+func (cc *Chesscom) CalculateTimeLeftSeconds() error {
 	time_left, err := cc.Driver.FindElements(selenium.ByClassName, "time")
 	if err != nil {
 		return err
@@ -310,7 +301,7 @@ func (cc *Lichess) CacculateTimeLeftSeconds() error {
 	return nil
 }
 
-func (cc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, time_left_seconds [2]int), error) {
+func (cc *Chesscom) PlayMoveWithMouse() (func(move string, len_move_list int, time_left_seconds [2]int), error) {
 	defer TimeTrack(time.Now())
 	cg_board, err := cc.Driver.FindElement(selenium.ByTagName, "cg-board")
 	if err != nil {
@@ -417,7 +408,7 @@ func (cc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 	}, nil
 }
 
-func (cc *Lichess) GetGameState() string {
+func (cc *Chesscom) GetGameState() string {
 	game_state, err := cc.Driver.FindElement(selenium.ByClassName, "result")
 	if err != nil {
 		cc.GameState = "ongoing"
@@ -430,7 +421,7 @@ func (cc *Lichess) GetGameState() string {
 	return cc.GameState
 }
 
-func (cc *Lichess) NewOpponent() error {
+func (cc *Chesscom) NewOpponent() error {
 	new_opponent, err := cc.Driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[5]/div/a[1]`) // New opponent
 	if err != nil {
 		return err
@@ -440,16 +431,16 @@ func (cc *Lichess) NewOpponent() error {
 }
 
 // getter functions
-func (cc *Lichess) GetPlayWithWhite() bool {
+func (cc *Chesscom) GetPlayWithWhite() bool {
 	return cc.PlayWithWhite
 }
-func (cc *Lichess) GetMoveList() []string {
+func (cc *Chesscom) GetMoveList() []string {
 	return cc.MoveList
 }
-func (cc *Lichess) GetBestMove() string {
+func (cc *Chesscom) GetBestMove() string {
 	return cc.BestMove.String()
 }
-func (cc *Lichess) GetTimeLeftSeconds() [2]int {
+func (cc *Chesscom) GetTimeLeftSeconds() [2]int {
 	return cc.TimeLeftSeconds
 }
 

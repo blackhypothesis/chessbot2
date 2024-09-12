@@ -1,11 +1,12 @@
-module github.com/blackhypothesis/chessbot
+module github.com/blackhypothesis/chessbot2
 
 go 1.22.6
 
-require github.com/tebeka/selenium v0.9.9
+replace github.com/blackhypothesis/chessbot2/lichess => ./lichess
+
+replace github.com/blackhypothesis/chessbot2/chesscom => ./chesscom
 
 require (
-	github.com/blackhypothesis/chessbot/lichess v0.0.0-00010101000000-000000000000 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/dblohm7/wingoes v0.0.0-20231019175336-f6e33aa7cc34 // indirect
 	github.com/gen2brain/shm v0.0.0-20230802011745-f2460f5984f7 // indirect
@@ -23,6 +24,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/tailscale/win v0.0.0-20240403170916-6580b55d49ca // indirect
+	github.com/tebeka/selenium v0.9.9 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/vcaesar/gops v0.40.0 // indirect
@@ -33,5 +35,3 @@ require (
 	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 )
-
-replace github.com/blackhypothesis/chessbot/lichess => ./lichess
