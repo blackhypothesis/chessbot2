@@ -101,76 +101,84 @@ func (cc *Chesscom) SignIn() error {
 }
 
 func (cc *Chesscom) PlayWithHuman() error {
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	play_url := fmt.Sprintf("%s/play/online", cc.Url)
 	log.Println("Connecting to: ", play_url)
-	err := cc.Driver.Get(cc.Url)
+	err := cc.Driver.Get(play_url)
 	if err != nil {
 		return err
 	}
+	time.Sleep(1 * time.Second)
+	time_selector_button, err := cc.Driver.FindElement(selenium.ByClassName, "selector-button-button")
+	if err != nil {
+		return err
+	}
+	time_selector_button.Click()
+	time.Sleep(500 * time.Millisecond)
+
+	time_selectors, err := cc.Driver.FindElements(selenium.ByClassName, "time-selector-button-button")
+	if err != nil {
+		return err
+	}
+	switch cc.TimeControl {
+	case "1+0":
+		time_selectors[0].Click()
+	case "1+1":
+		time_selectors[1].Click()
+	case "2+1":
+		time_selectors[2].Click()
+	case "3+0":
+		time_selectors[3].Click()
+	case "3+2":
+		time_selectors[4].Click()
+	case "5+0":
+		time_selectors[5].Click()
+	default:
+		return errors.New("timecontrol does not exist")
+	}
+	time.Sleep(500 * time.Millisecond)
+	button_play, err := cc.Driver.FindElement(selenium.ByClassName, "cc-button-xx-large")
+	if err != nil {
+		return err
+	}
+	button_play.Click()
+	time.Sleep(500 * time.Millisecond)
+
+	button_guest, err := cc.Driver.FindElement(selenium.ByID, "guest-button")
+	if err != nil {
+		return err
+	}
+	button_guest.Click()
+
 	return nil
 }
 
 func (cc *Chesscom) PlayWithComputer() error {
-	// Button [PLAY WITH COMPUTER]
-	button, err := cc.Driver.FindElement(selenium.ByClassName, "config_ai")
-	if err != nil {
-		return err
-	}
-	button.Click()
-	time.Sleep(500 * time.Millisecond)
-
-	// Button Strength [8]
-	level, err := cc.Driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[3]/div[1]/group/div[8]/label")
-	if err != nil {
-		return err
-	}
-	level.Click()
-	time.Sleep(500 * time.Millisecond)
-
-	// Dropdown Time Control
-	tc, err := cc.Driver.FindElement(selenium.ByID, "sf_timeMode")
-	if err != nil {
-		return err
-	}
-	tcv, err := tc.FindElements(selenium.ByTagName, "option")
-	if err != nil {
-		return err
-	}
-	// Real Time (first option in dropdown)
-	tcv[0].Click()
-	time.Sleep(500 * time.Millisecond)
-
-	// Button [white/black]
-	bw, err := cc.Driver.FindElement(selenium.ByXPATH, "/html/body/div/main/div[1]/dialog/div[2]/div/div/div[4]/button[2]")
-	if err != nil {
-		return err
-	}
-	bw.Click()
 	return nil
 }
 
 func (cc *Chesscom) NewGame() {
-	// cc.MoveList = nil
 	cc.Game = chess.NewGame()
 }
 
 func (cc *Chesscom) IsPlayWithWhite() {
-	board_coords_class := ""
+	coordinate := ""
 	for {
-		board_coords, err := cc.Driver.FindElement(selenium.ByTagName, "coords")
+		log.Println("trying to get board orientation, ...")
+		coordinates_light, err := cc.Driver.FindElements(selenium.ByClassName, "coordinate-light")
 		if err != nil {
 			continue
 		}
-		board_coords_class, err = board_coords.GetAttribute("class")
+		coordinate, err = coordinates_light[0].Text()
 		if err != nil {
 			continue
 		}
 		break
 	}
-	if board_coords_class == "ranks black" {
+	fmt.Printf("board coordinate upper left: %s\n", coordinate)
+	if coordinate == "1" {
 		cc.PlayWithWhite = false
-	} else {
+	} else if coordinate == "8" {
 		cc.PlayWithWhite = true
 	}
 }

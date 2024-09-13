@@ -25,13 +25,9 @@ func (cb ChessBot) Run() {
 		log.Fatal(err)
 	}
 
-	err = cb.co.PlayWithComputer()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	for {
 		cb.co.IsPlayWithWhite()
+		log.Printf("IsPlayWithWhite: %v", cb.co.GetPlayWithWhite())
 
 		// get closure functions
 		updateMoveList := cb.co.UpdateMoveList()
@@ -45,7 +41,7 @@ func (cb ChessBot) Run() {
 			cb.co.NewGame()
 			updateMoveList()
 
-			if cb.co.IsMyTurn(cb.co.GetPlayWithWhite()) && len(cb.co.GetMoveList()) > 8 {
+			if cb.co.IsMyTurn(cb.co.GetPlayWithWhite()) {
 				err := cb.co.CalculateEngineBestMove()
 				if err != nil {
 					log.Println("Can't get best move from engine: ", err)

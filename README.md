@@ -57,6 +57,16 @@ return true, nil
 ```
 
 # chess.com
+## Time selector
+```
+document.getElementsByClassName("time-selector-button-button")
+```
+## Board orientation
+```
+c = document.getElementsByClassName("coordinate-light") 
+c[0].textContent    "8" -> play with white
+                    "1" -> play with black
+```
 ## move list
 ```
 move_list = document.getElementsByClassName("main-line-row")

@@ -2,6 +2,7 @@ package lichess
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -132,19 +133,19 @@ func (lc *Lichess) SignIn() error {
 
 func (lc *Lichess) PlayWithHuman() error {
 	time.Sleep(2 * time.Second)
-	time_settings, err := lc.Driver.FindElements(selenium.ByClassName, "clock")
+	time_selectors, err := lc.Driver.FindElements(selenium.ByClassName, "clock")
 	if err != nil {
 		return err
 	}
 	switch lc.TimeControl {
 	case "1+0":
-		time_settings[0].Click()
+		time_selectors[0].Click()
 	case "2+1":
-		time_settings[1].Click()
+		time_selectors[1].Click()
 	case "3+0":
-		time_settings[2].Click()
+		time_selectors[2].Click()
 	case "3+2":
-		time_settings[3].Click()
+		time_selectors[3].Click()
 	default:
 		return errors.New("timecontrol does not exist")
 	}
@@ -191,7 +192,6 @@ func (lc *Lichess) PlayWithComputer() error {
 }
 
 func (lc *Lichess) NewGame() {
-	// lc.MoveList = nil
 	lc.Game = chess.NewGame()
 }
 
@@ -452,11 +452,15 @@ func (lc *Lichess) GetGameState() string {
 	game_state, err := lc.Driver.FindElement(selenium.ByClassName, "result")
 	if err != nil {
 		lc.GameState = "ongoing"
+		return lc.GameState
 	}
 	state, err := game_state.Text()
 	if err != nil {
 		lc.GameState = "unknown"
+		return lc.GameState
 	}
+	fmt.Println("got game_state text ")
+
 	lc.GameState = state
 	return lc.GameState
 }
