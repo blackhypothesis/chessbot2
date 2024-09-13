@@ -104,7 +104,16 @@ func (lc *Lichess) SignIn() error {
 	}
 	sign_in.Click()
 
-	time.Sleep(1 * time.Second)
+	err = lc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+		form_username, _ := driver.FindElement(selenium.ByCSSSelector, ".post:nth-child(60)")
+		if form_username != nil {
+			return form_username.IsDisplayed()
+		}
+		return false, nil
+	}, 2*time.Second)
+	if err != nil {
+		log.Fatal("Error:", err)
+	}
 
 	form_username, err := lc.Driver.FindElement(selenium.ByID, "form3-username")
 	if err != nil {
@@ -132,7 +141,16 @@ func (lc *Lichess) SignIn() error {
 }
 
 func (lc *Lichess) PlayWithHuman() error {
-	time.Sleep(2 * time.Second)
+	err := lc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+		time_selectors, _ := lc.Driver.FindElements(selenium.ByClassName, "clock")
+		if time_selectors != nil {
+			return time_selectors[0].IsDisplayed()
+		}
+		return false, nil
+	}, 2*time.Second)
+	if err != nil {
+		return err
+	}
 	time_selectors, err := lc.Driver.FindElements(selenium.ByClassName, "clock")
 	if err != nil {
 		return err
@@ -198,6 +216,18 @@ func (lc *Lichess) NewGame() {
 func (lc *Lichess) IsPlayWithWhite() {
 	board_coords_class := ""
 	for {
+		err := lc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+			board_coords, _ := driver.FindElement(selenium.ByTagName, "coords")
+			if board_coords != nil {
+				return board_coords.IsDisplayed()
+			}
+			return false, nil
+		}, 2*time.Second)
+
+		if err != nil {
+			log.Println("IsPlayWithWhite: can't get board orientation")
+		}
+
 		board_coords, err := lc.Driver.FindElement(selenium.ByTagName, "coords")
 		if err != nil {
 			continue

@@ -50,7 +50,9 @@ func (cb ChessBot) Run() {
 					if err != nil {
 						log.Println("Can't get time left")
 					}
-					playMove(cb.co.GetBestMove(), len(cb.co.GetMoveList()), cb.co.GetTimeLeftSeconds())
+					if len(cb.co.GetMoveList()) > 7 {
+						playMove(cb.co.GetBestMove(), len(cb.co.GetMoveList()), cb.co.GetTimeLeftSeconds())
+					}
 				}
 			}
 			cb.co.GetGameState()
