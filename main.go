@@ -8,14 +8,12 @@ import (
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
 	lc, err := lichess.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println(lc)
-
 	chess_bot := NewChessBot(lc)
-
 	chess_bot.Run()
 }

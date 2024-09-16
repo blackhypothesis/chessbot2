@@ -25,6 +25,8 @@ func (cb ChessBot) Run() {
 		log.Fatal(err)
 	}
 
+	nr_games := 0
+
 	for {
 		cb.co.IsPlayWithWhite()
 		log.Printf("IsPlayWithWhite: %v", cb.co.GetPlayWithWhite())
@@ -50,7 +52,7 @@ func (cb ChessBot) Run() {
 					if err != nil {
 						log.Println("Can't get time left")
 					}
-					if len(cb.co.GetMoveList()) > 7 {
+					if len(cb.co.GetMoveList()) > -1 {
 						playMove(cb.co.GetBestMove(), len(cb.co.GetMoveList()), cb.co.GetTimeLeftSeconds())
 					}
 				}
@@ -63,5 +65,7 @@ func (cb ChessBot) Run() {
 				break
 			}
 		}
+		nr_games++
+		log.Printf("Games played: %d\n", nr_games)
 	}
 }

@@ -2,7 +2,6 @@ package lichess
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -489,8 +488,6 @@ func (lc *Lichess) GetGameState() string {
 		lc.GameState = "unknown"
 		return lc.GameState
 	}
-	fmt.Println("got game_state text ")
-
 	lc.GameState = state
 	return lc.GameState
 }
