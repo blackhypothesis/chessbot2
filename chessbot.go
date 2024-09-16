@@ -54,6 +54,7 @@ func (cb ChessBot) Run() {
 					}
 					if len(cb.co.GetMoveList()) > -1 {
 						playMove(cb.co.GetBestMove(), len(cb.co.GetMoveList()), cb.co.GetTimeLeftSeconds())
+						cb.co.PrintSearchResults()
 					}
 				}
 			}

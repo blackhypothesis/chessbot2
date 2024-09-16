@@ -32,6 +32,7 @@ type Lichess struct {
 	MoveList        []string
 	PlayWithWhite   bool
 	Game            *chess.Game
+	SearchResults   uci.SearchResults
 	BestMove        *chess.Move
 	TimeLeftSeconds [2]int
 	GameState       string
@@ -325,23 +326,25 @@ func (lc *Lichess) CalculateEngineBestMove() error {
 	if err := eng.Run(cmdThreads, cmdSkill, cmdPos, cmdGo); err != nil {
 		return err
 	}
-	search_resultes := eng.SearchResults()
-	move := search_resultes.BestMove
-
-	pv_len := len(search_resultes.Info.PV)
-	if pv_len > 14 {
-		pv_len = 14
-	}
-	log.Println("Best Move:                 ", move)
-	log.Println("Info: Depth / selective:   ", search_resultes.Info.Depth, " / ", search_resultes.Info.Seldepth)
-	log.Println("Info: Score / Mate in:     ", search_resultes.Info.Score.CP, " / ", search_resultes.Info.Score.Mate)
-	log.Println("Info: PV:                  ", search_resultes.Info.PV[:pv_len])
-	log.Println("Info: NPS / Nodes:         ", search_resultes.Info.NPS, " / ", search_resultes.Info.Nodes)
-	log.Println("Info: Time:                ", search_resultes.Info.Time)
-	log.Println("---------------------------------------------------------------------------------------------------------")
+	lc.SearchResults = eng.SearchResults()
+	move := lc.SearchResults.BestMove
 
 	lc.BestMove = move
 	return nil
+}
+
+func (lc *Lichess) PrintSearchResults() {
+	pv_len := len(lc.SearchResults.Info.PV)
+	if len(lc.SearchResults.Info.PV) > 14 {
+		pv_len = 14
+	}
+	log.Println("Best Move:                 ", lc.BestMove)
+	log.Println("Info: Depth / selective:   ", lc.SearchResults.Info.Depth, " / ", lc.SearchResults.Info.Seldepth)
+	log.Println("Info: Score / Mate in:     ", lc.SearchResults.Info.Score.CP, " / ", lc.SearchResults.Info.Score.Mate)
+	log.Println("Info: PV:                  ", lc.SearchResults.Info.PV[:pv_len])
+	log.Println("Info: NPS / Nodes:         ", lc.SearchResults.Info.NPS, " / ", lc.SearchResults.Info.Nodes)
+	log.Println("Info: Time:                ", lc.SearchResults.Info.Time)
+	log.Println("---------------------------------------------------------------------------------------------------------")
 }
 
 func (lc *Lichess) CalculateTimeLeftSeconds() error {

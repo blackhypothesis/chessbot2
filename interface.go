@@ -11,6 +11,7 @@ type chessOnline interface {
 	UpdateMoveList() func()
 	IsMyTurn(bool) bool
 	CalculateEngineBestMove() error
+	PrintSearchResults()
 	CalculateTimeLeftSeconds() error
 	PlayMoveWithMouse() (func(string, int, [2]int), error)
 	GetGameState() string
