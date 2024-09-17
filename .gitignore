@@ -1,3 +1,5 @@
 .env
 chromedriver-linux64/
 chessbot2
+chessbot2.pgn
+

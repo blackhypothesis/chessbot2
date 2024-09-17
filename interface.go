@@ -7,6 +7,7 @@ type chessOnline interface {
 	PlayWithHuman() error
 	PlayWithComputer() error
 	NewGame()
+	// checks if play with white or black
 	IsPlayWithWhite()
 	UpdateMoveList() func()
 	IsMyTurn(bool) bool
@@ -20,4 +21,5 @@ type chessOnline interface {
 	GetMoveList() []string
 	GetBestMove() string
 	GetTimeLeftSeconds() [2]int
+	SaveGame()
 }

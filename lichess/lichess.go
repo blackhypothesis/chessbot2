@@ -2,6 +2,7 @@ package lichess
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -32,6 +33,7 @@ type Lichess struct {
 	MoveList        []string
 	PlayWithWhite   bool
 	Game            *chess.Game
+	NumberOfGames   int
 	SearchResults   uci.SearchResults
 	TimeLeftSeconds [2]int
 	GameState       string
@@ -39,7 +41,7 @@ type Lichess struct {
 	Driver          selenium.WebDriver
 }
 
-func New() (*Lichess, error) {
+func New(time_control string) (*Lichess, error) {
 	env, err := getENV()
 	if err != nil {
 		log.Fatal("Error: ", err)
@@ -48,7 +50,7 @@ func New() (*Lichess, error) {
 		Url:         "https://lichess.org",
 		UserName:    env.Login,
 		Password:    env.Password,
-		TimeControl: "1+0",
+		TimeControl: time_control,
 	}, nil
 }
 
@@ -140,10 +142,24 @@ func (lc *Lichess) SignIn() error {
 }
 
 func (lc *Lichess) PlayWithHuman() error {
+	i := 0
+	switch lc.TimeControl {
+	case "1+0":
+		i = 0
+	case "2+1":
+		i = 1
+	case "3+0":
+		i = 2
+	case "3+2":
+		i = 3
+	default:
+		return errors.New("timecontrol does not exist")
+	}
+
 	err := lc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
 		time_selectors, _ := lc.Driver.FindElements(selenium.ByClassName, "clock")
 		if time_selectors != nil {
-			return time_selectors[0].IsDisplayed()
+			return time_selectors[i].IsDisplayed()
 		}
 		return false, nil
 	}, 2*time.Second)
@@ -154,18 +170,8 @@ func (lc *Lichess) PlayWithHuman() error {
 	if err != nil {
 		return err
 	}
-	switch lc.TimeControl {
-	case "1+0":
-		time_selectors[0].Click()
-	case "2+1":
-		time_selectors[1].Click()
-	case "3+0":
-		time_selectors[2].Click()
-	case "3+2":
-		time_selectors[3].Click()
-	default:
-		return errors.New("timecontrol does not exist")
-	}
+
+	time_selectors[i].Click()
 	return nil
 }
 
@@ -423,10 +429,10 @@ func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 		}
 
 		// waitToPlayMove(len_move_list, time_left_seconds)
-
 		log.Printf("Play move: %s\n", move)
 
 		// move with drag and drop and with clicks
+		mouse_x, mouse_y := robotgo.Location()
 		robotgo.Move(location_start.X, location_start.Y)
 		if rand.Float64() < 0.5 {
 			robotgo.Click("left")
@@ -460,6 +466,7 @@ func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 			robotgo.Move(location.X, location.Y)
 			robotgo.Click("left")
 		}
+		robotgo.Move(mouse_x, mouse_y)
 	}, nil
 }
 
@@ -485,6 +492,40 @@ func (lc *Lichess) NewOpponent() error {
 	}
 	new_opponent.Click()
 	return nil
+}
+
+func (lc *Lichess) SaveGame() {
+	if len(lc.MoveList) == 0 {
+		return
+	}
+	lc.NumberOfGames++
+	lc.Game = chess.NewGame()
+	if lc.PlayWithWhite {
+		lc.Game.AddTagPair("White", "Stockfish 17")
+		lc.Game.AddTagPair("Black", "Anonymous")
+	} else {
+		lc.Game.AddTagPair("White", "Anonymous")
+		lc.Game.AddTagPair("Black", "Stockfish 17")
+	}
+	lc.Game.AddTagPair("Result", lc.GameState)
+	lc.Game.AddTagPair("Date", time.Now().Format("2006-01-02 15:04:05"))
+	lc.Game.AddTagPair("Round", strconv.Itoa(lc.NumberOfGames))
+	lc.Game.AddTagPair("TimeControl", lc.TimeControl)
+	for _, move := range lc.MoveList {
+		if err := lc.Game.MoveStr(move); err != nil {
+			log.Println("Loading moves: ", err)
+		}
+	}
+	f, err := os.OpenFile("chessbot2.pgn", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	if _, err = f.WriteString(fmt.Sprintf("%s\n\n\n", lc.Game)); err != nil {
+		panic(err)
+	}
+
+	fmt.Println(lc.Game)
 }
 
 // getter functions

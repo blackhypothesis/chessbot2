@@ -9,7 +9,7 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
-	lc, err := lichess.New()
+	lc, err := lichess.New("2+1")
 	if err != nil {
 		log.Fatal(err)
 	}
