@@ -33,14 +33,15 @@ type Chesscom struct {
 	MoveList        []string
 	PlayWithWhite   bool
 	Game            *chess.Game
-	BestMove        *chess.Move
+	NumberOfGames   int
+	SearchResults   uci.SearchResults
 	TimeLeftSeconds [2]int
 	GameState       string
 	Service         *selenium.Service
 	Driver          selenium.WebDriver
 }
 
-func New() (*Chesscom, error) {
+func New(time_control string) (*Chesscom, error) {
 	env, err := getENV()
 	if err != nil {
 		log.Fatal("Error: ", err)
@@ -49,7 +50,7 @@ func New() (*Chesscom, error) {
 		Url:         "https://chess.com",
 		UserName:    env.Login,
 		Password:    env.Password,
-		TimeControl: "1+0",
+		TimeControl: time_control,
 	}, nil
 }
 
@@ -96,6 +97,7 @@ func (cc *Chesscom) ServiceStop() {
 	cc.Service.Stop()
 }
 
+// not jet implemented
 func (cc *Chesscom) SignIn() error {
 	return nil
 }
@@ -108,42 +110,86 @@ func (cc *Chesscom) PlayWithHuman() error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(1 * time.Second)
+	// time selector button, click on it reveales a drop down menu with time controls
+	err = cc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+		time_selector_button, _ := cc.Driver.FindElement(selenium.ByClassName, "selector-button-button")
+		if time_selector_button != nil {
+			return time_selector_button.IsDisplayed()
+		}
+		return false, nil
+	}, 5*time.Second)
+	if err != nil {
+		return err
+	}
 	time_selector_button, err := cc.Driver.FindElement(selenium.ByClassName, "selector-button-button")
 	if err != nil {
 		return err
 	}
 	time_selector_button.Click()
-	time.Sleep(500 * time.Millisecond)
 
+	// buttons in dropdown menu with time controls
+	i := 0
+	switch cc.TimeControl {
+	case "1+0":
+		i = 0
+	case "1+1":
+		i = 1
+	case "2+1":
+		i = 2
+	case "3+0":
+		i = 3
+	case "3+2":
+		i = 4
+	case "5+0":
+		i = 5
+	default:
+		return errors.New("timecontrol does not exist")
+	}
+
+	err = cc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+		time_selectors, _ := cc.Driver.FindElements(selenium.ByClassName, "time-selector-button-button")
+		if time_selectors != nil {
+			return time_selectors[i].IsDisplayed()
+		}
+		return false, nil
+	}, 5*time.Second)
+	if err != nil {
+		return err
+	}
 	time_selectors, err := cc.Driver.FindElements(selenium.ByClassName, "time-selector-button-button")
 	if err != nil {
 		return err
 	}
-	switch cc.TimeControl {
-	case "1+0":
-		time_selectors[0].Click()
-	case "1+1":
-		time_selectors[1].Click()
-	case "2+1":
-		time_selectors[2].Click()
-	case "3+0":
-		time_selectors[3].Click()
-	case "3+2":
-		time_selectors[4].Click()
-	case "5+0":
-		time_selectors[5].Click()
-	default:
-		return errors.New("timecontrol does not exist")
+	time_selectors[i].Click()
+
+	// large button [Play]
+	err = cc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+		button_play, _ := cc.Driver.FindElement(selenium.ByClassName, "cc-button-xx-large")
+		if button_play != nil {
+			return button_play.IsDisplayed()
+		}
+		return false, nil
+	}, 5*time.Second)
+	if err != nil {
+		return err
 	}
-	time.Sleep(500 * time.Millisecond)
 	button_play, err := cc.Driver.FindElement(selenium.ByClassName, "cc-button-xx-large")
 	if err != nil {
 		return err
 	}
 	button_play.Click()
-	time.Sleep(500 * time.Millisecond)
 
+	// if "Play as a Guest" appears, click on the webelement
+	err = cc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+		button_guest, _ := cc.Driver.FindElement(selenium.ByID, "guest-button")
+		if button_guest != nil {
+			return button_guest.IsDisplayed()
+		}
+		return false, nil
+	}, 5*time.Second)
+	if err != nil {
+		fmt.Println("'Play as a Guest' text does not appear")
+	}
 	button_guest, err := cc.Driver.FindElement(selenium.ByID, "guest-button")
 	if err != nil {
 		return err
@@ -153,6 +199,7 @@ func (cc *Chesscom) PlayWithHuman() error {
 	return nil
 }
 
+// not jet implemented
 func (cc *Chesscom) PlayWithComputer() error {
 	return nil
 }
@@ -162,25 +209,33 @@ func (cc *Chesscom) NewGame() {
 }
 
 func (cc *Chesscom) IsPlayWithWhite() {
-	coordinate := ""
-	for {
-		log.Println("trying to get board orientation, ...")
-		coordinates_light, err := cc.Driver.FindElements(selenium.ByClassName, "coordinate-light")
-		if err != nil {
-			continue
+	// get
+	err := cc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+		player_avatars, _ := cc.Driver.FindElements(selenium.ByClassName, "player-avatar")
+		if player_avatars != nil {
+			return player_avatars[0].IsDisplayed()
 		}
-		coordinate, err = coordinates_light[0].Text()
-		if err != nil {
-			continue
-		}
-		break
+		return false, nil
+	}, 20*time.Second)
+	if err != nil {
+		log.Fatal("Cant get player-avatar: ", err)
 	}
-	fmt.Printf("board coordinate upper left: %s\n", coordinate)
-	if coordinate == "1" {
-		cc.PlayWithWhite = false
-	} else if coordinate == "8" {
-		cc.PlayWithWhite = true
+	player_avatars, err := cc.Driver.FindElements(selenium.ByClassName, "player-avatar")
+	if err != nil {
+		log.Fatal("Cant get player-avatar: ", err)
 	}
+
+	player_top, err := player_avatars[0].Text()
+	if err != nil {
+		log.Fatal("Player top: ", err)
+	}
+	player_bottom, err := player_avatars[1].Text()
+	if err != nil {
+		log.Fatal("Player bottom: ", err)
+	}
+	log.Println(player_top, player_bottom)
+
+	cc.PlayWithWhite = false
 }
 
 func (cc *Chesscom) UpdateMoveList() func() {
@@ -240,7 +295,7 @@ func (cc *Chesscom) CalculateEngineBestMove() error {
 		}
 	}
 
-	// setoption name Threads value 8
+	// setoption name Threads value 4
 	cmdThreads := uci.CmdSetOption{
 		Name:  "Threads",
 		Value: "4",
@@ -264,22 +319,8 @@ func (cc *Chesscom) CalculateEngineBestMove() error {
 	if err := eng.Run(cmdThreads, cmdSkill, cmdPos, cmdGo); err != nil {
 		return err
 	}
-	search_resultes := eng.SearchResults()
-	move := search_resultes.BestMove
+	cc.SearchResults = eng.SearchResults()
 
-	pv_len := len(search_resultes.Info.PV)
-	if pv_len > 14 {
-		pv_len = 14
-	}
-	log.Println("Best Move:                 ", move)
-	log.Println("Info: Depth / selective:   ", search_resultes.Info.Depth, " / ", search_resultes.Info.Seldepth)
-	log.Println("Info: Score / Mate in:     ", search_resultes.Info.Score.CP, " / ", search_resultes.Info.Score.Mate)
-	log.Println("Info: PV:                  ", search_resultes.Info.PV[:pv_len])
-	log.Println("Info: NPS / Nodes:         ", search_resultes.Info.NPS, " / ", search_resultes.Info.Nodes)
-	log.Println("Info: Time:                ", search_resultes.Info.Time)
-	log.Println("---------------------------------------------------------------------------------------------------------")
-
-	cc.BestMove = move
 	return nil
 }
 
@@ -307,6 +348,20 @@ func (cc *Chesscom) CalculateTimeLeftSeconds() error {
 		cc.TimeLeftSeconds = [2]int{time_self_secs, time_opponent_secs}
 	}
 	return nil
+}
+
+func (cc *Chesscom) PrintSearchResults() {
+	pv_len := len(cc.SearchResults.Info.PV)
+	if len(cc.SearchResults.Info.PV) > 14 {
+		pv_len = 14
+	}
+	log.Println("Best Move:                 ", cc.SearchResults.BestMove.String())
+	log.Println("Info: PV:                  ", cc.SearchResults.Info.PV[:pv_len])
+	log.Println("Info: Depth / selective:   ", cc.SearchResults.Info.Depth, " / ", cc.SearchResults.Info.Seldepth)
+	log.Println("Info: Score / Mate in:     ", cc.SearchResults.Info.Score.CP, " / ", cc.SearchResults.Info.Score.Mate)
+	log.Println("Info: NPS / Nodes:         ", cc.SearchResults.Info.NPS, " / ", cc.SearchResults.Info.Nodes)
+	log.Println("Info: Time:                ", cc.SearchResults.Info.Time)
+	log.Println("---------------------------------------------------------------------------------------------------------")
 }
 
 func (cc *Chesscom) PlayMoveWithMouse() (func(move string, len_move_list int, time_left_seconds [2]int), error) {
@@ -438,6 +493,40 @@ func (cc *Chesscom) NewOpponent() error {
 	return nil
 }
 
+func (cc *Chesscom) SaveGame() {
+	if len(cc.MoveList) == 0 {
+		return
+	}
+	cc.NumberOfGames++
+	cc.Game = chess.NewGame()
+	if cc.PlayWithWhite {
+		cc.Game.AddTagPair("White", "Stockfish 17")
+		cc.Game.AddTagPair("Black", "Anonymous")
+	} else {
+		cc.Game.AddTagPair("White", "Anonymous")
+		cc.Game.AddTagPair("Black", "Stockfish 17")
+	}
+	cc.Game.AddTagPair("Result", cc.GameState)
+	cc.Game.AddTagPair("Date", time.Now().Format("2006-01-02 15:04:05"))
+	cc.Game.AddTagPair("Round", strconv.Itoa(cc.NumberOfGames))
+	cc.Game.AddTagPair("TimeControl", cc.TimeControl)
+	for _, move := range cc.MoveList {
+		if err := cc.Game.MoveStr(move); err != nil {
+			log.Println("Loading moves: ", err)
+		}
+	}
+	f, err := os.OpenFile("chessbot2.pgn", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	if _, err = f.WriteString(fmt.Sprintf("%s\n\n\n", cc.Game)); err != nil {
+		panic(err)
+	}
+
+	fmt.Println(cc.Game)
+}
+
 // getter functions
 func (cc *Chesscom) GetPlayWithWhite() bool {
 	return cc.PlayWithWhite
@@ -446,7 +535,7 @@ func (cc *Chesscom) GetMoveList() []string {
 	return cc.MoveList
 }
 func (cc *Chesscom) GetBestMove() string {
-	return cc.BestMove.String()
+	return cc.SearchResults.BestMove.String()
 }
 func (cc *Chesscom) GetTimeLeftSeconds() [2]int {
 	return cc.TimeLeftSeconds

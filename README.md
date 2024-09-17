@@ -40,14 +40,36 @@ result[0].innerHTML
 ```
 document.getElementsByClassName("time-selector-button-button")
 ```
-## Board orientation
+## Board
+### Orientation
 ```
 c = document.getElementsByClassName("coordinate-light") 
 c[0].textContent    "8" -> play with white
                     "1" -> play with black
 ```
+### Coordinates
+```
+cl = document.getElementsByClassName("coordinate-light")
+cd = document.getElementsByClassName("coordinate-dark")
+```
 ## move list
 ```
 move_list = document.getElementsByClassName("main-line-row")
 move = move_list[0].getElementsByClassName("main-line-ply")
+```
+
+## clocks
+```
+c = document.getElementsByClassName("clock-time-monospace")
+```
+
+## Players
+```
+p = document.getElementsByClassName("player-avatar")
+
+p[0].innerHTML
+'<img alt="Guest2593657151" src="https://www.chess.com/bundles/web/images/white_400.png" width="40" height="40"> <div class="presence-square-component"><div class="presence-square-square" style="width: 1rem; height: 1rem;"></div></div> '
+
+p[1].innerHTML
+'<img alt="Guest6542920377" src="https://www.chess.com/bundles/web/images/black_400.png" width="40" height="40"> <div class="presence-square-component"><div class="presence-square-square" style="width: 1rem; height: 1rem;"></div></div> '
 ```
