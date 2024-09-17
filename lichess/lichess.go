@@ -33,7 +33,6 @@ type Lichess struct {
 	PlayWithWhite   bool
 	Game            *chess.Game
 	SearchResults   uci.SearchResults
-	BestMove        *chess.Move
 	TimeLeftSeconds [2]int
 	GameState       string
 	Service         *selenium.Service
@@ -302,7 +301,7 @@ func (lc *Lichess) CalculateEngineBestMove() error {
 		}
 	}
 
-	// setoption name Threads value 8
+	// setoption name Threads value 4
 	cmdThreads := uci.CmdSetOption{
 		Name:  "Threads",
 		Value: "4",
@@ -327,9 +326,7 @@ func (lc *Lichess) CalculateEngineBestMove() error {
 		return err
 	}
 	lc.SearchResults = eng.SearchResults()
-	move := lc.SearchResults.BestMove
 
-	lc.BestMove = move
 	return nil
 }
 
@@ -338,10 +335,10 @@ func (lc *Lichess) PrintSearchResults() {
 	if len(lc.SearchResults.Info.PV) > 14 {
 		pv_len = 14
 	}
-	log.Println("Best Move:                 ", lc.BestMove)
+	log.Println("Best Move:                 ", lc.SearchResults.BestMove.String())
+	log.Println("Info: PV:                  ", lc.SearchResults.Info.PV[:pv_len])
 	log.Println("Info: Depth / selective:   ", lc.SearchResults.Info.Depth, " / ", lc.SearchResults.Info.Seldepth)
 	log.Println("Info: Score / Mate in:     ", lc.SearchResults.Info.Score.CP, " / ", lc.SearchResults.Info.Score.Mate)
-	log.Println("Info: PV:                  ", lc.SearchResults.Info.PV[:pv_len])
 	log.Println("Info: NPS / Nodes:         ", lc.SearchResults.Info.NPS, " / ", lc.SearchResults.Info.Nodes)
 	log.Println("Info: Time:                ", lc.SearchResults.Info.Time)
 	log.Println("---------------------------------------------------------------------------------------------------------")
@@ -352,7 +349,7 @@ func (lc *Lichess) CalculateTimeLeftSeconds() error {
 	if err != nil {
 		return err
 	}
-	// sometimes it crashe, because of:
+	// sometimes it crashes, because of:
 	//   panic: runtime error: index out of range [0] with length 0
 	// therefore check if len is 2
 	if len(time_left) == 2 {
@@ -398,9 +395,6 @@ func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 	field_size.Width = board_size.Width / 8
 	field_size.Height = board_size.Height / 8
 
-	min_wait_seconds := 0.5
-	max_wait_seconds := 10.0
-
 	return func(move string, len_move_list int, time_left_seconds [2]int) {
 		piece_start := new(selenium.Point)
 		piece_end := new(selenium.Point)
@@ -428,30 +422,19 @@ func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 			Y: y_offset + board_location.Y + (7-piece_end.Y)*field_size.Height + field_size.Height/2,
 		}
 
-		// artificially wait for some time to get higher standarddeviation of move time usage
-		max_wait_secs := 0.0
-		// do not spend too much time in the first 6 moves
-		if len_move_list < 12 {
-			max_wait_secs = 2.0
-		} else {
-			// play faster when the time left to play is lower
-			// keep 15 seconds as reserve
-			max_wait_secs = float64(time_left_seconds[0]-15) / 10
-			if max_wait_secs < 0.8 {
-				max_wait_secs = 0.8
-			}
-		}
-		if max_wait_secs > max_wait_seconds {
-			max_wait_secs = max_wait_seconds
-		}
-		wait_seconds := min_wait_seconds + rand.Float64()*(max_wait_secs-min_wait_seconds)
-		log.Printf("Waiting for %f seconds ...\n", wait_seconds)
-		// time.Sleep(time.Duration(wait_seconds) * time.Second)
+		// waitToPlayMove(len_move_list, time_left_seconds)
+
 		log.Printf("Play move: %s\n", move)
+
+		// move with drag and drop and with clicks
 		robotgo.Move(location_start.X, location_start.Y)
-		robotgo.Click("left")
-		robotgo.Move(location_end.X, location_end.Y)
-		robotgo.Click("left")
+		if rand.Float64() < 0.5 {
+			robotgo.Click("left")
+			robotgo.Move(location_end.X, location_end.Y)
+			robotgo.Click("left")
+		} else {
+			robotgo.DragSmooth(location_end.X, location_end.Y, 0.1, 0.15, 10)
+		}
 
 		// piece promotion
 		// calculate the field to click, to promote the pawn to the desired piece
@@ -512,7 +495,7 @@ func (lc *Lichess) GetMoveList() []string {
 	return lc.MoveList
 }
 func (lc *Lichess) GetBestMove() string {
-	return lc.BestMove.String()
+	return lc.SearchResults.BestMove.String()
 }
 func (lc *Lichess) GetTimeLeftSeconds() [2]int {
 	return lc.TimeLeftSeconds
@@ -578,4 +561,30 @@ func TimeTrack(start time.Time) {
 	name := runtimeFunc.ReplaceAllString(funcObj.Name(), "$1")
 
 	log.Printf("%s took %s", name, elapsed)
+}
+
+func waitToPlayMove(len_move_list int, time_left_seconds [2]int) {
+	// artificially wait for some time to get higher standarddeviation of move time usage
+	min_wait_seconds := 0.5
+	max_wait_seconds := 10.0
+
+	max_wait_secs := 0.0
+	// do not spend too much time in the first 6 moves
+	if len_move_list < 12 {
+		max_wait_secs = 2.0
+	} else {
+		// play faster when the time left to play is lower
+		// keep 15 seconds as reserve
+		max_wait_secs = float64(time_left_seconds[0]-15) / 10
+		if max_wait_secs < 0.8 {
+			max_wait_secs = 0.8
+		}
+	}
+	if max_wait_secs > max_wait_seconds {
+		max_wait_secs = max_wait_seconds
+	}
+	wait_seconds := min_wait_seconds + rand.Float64()*(max_wait_secs-min_wait_seconds)
+	log.Printf("Waiting for %f seconds ...\n", wait_seconds)
+	time.Sleep(time.Duration(wait_seconds) * time.Second)
+
 }
