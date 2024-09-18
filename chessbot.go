@@ -56,7 +56,6 @@ func (cb ChessBot) Run() {
 					}
 				}
 			}
-			cb.co.GetGameState()
 			if cb.co.GetGameState() != "ongoing" {
 				log.Println("Game State: ", cb.co.GetGameState())
 				updateMoveList()
@@ -111,6 +110,14 @@ func (cb ChessBot) TestRun() {
 						cb.co.PrintSearchResults()
 					}
 				}
+			}
+			if cb.co.GetGameState() != "ongoing" {
+				log.Println("Game State: ", cb.co.GetGameState())
+				updateMoveList()
+				cb.co.SaveGame()
+				time.Sleep(3 * time.Second)
+				cb.co.NewOpponent()
+				break
 			}
 		}
 	}

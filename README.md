@@ -85,3 +85,11 @@ reason = document.getElementsByClassName("header-subtitle-first-line")
 reason[0].textContent
 'on time'
 ```
+
+### New Game / Rematch
+```
+button = document.getElementsByClassName("game-over-buttons-button")
+
+button[0] --> New Game
+button[1] --> Rematch
+```

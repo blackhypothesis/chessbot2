@@ -526,15 +526,21 @@ func (cc *Chesscom) PlayMoveWithMouse() (func(move string, len_move_list int, ti
 	}, nil
 }
 
-// not yet implemented
+// not fully implented
 func (cc *Chesscom) GetGameState() string {
-	game_state, err := cc.Driver.FindElement(selenium.ByClassName, "result")
+	game_state_reason, err := cc.Driver.FindElement(selenium.ByClassName, "header-subtitle-first-line")
 	if err != nil {
 		cc.GameState = "ongoing"
+		return cc.GameState
 	}
-	state, err := game_state.Text()
+	state, err := game_state_reason.Text()
 	if err != nil {
 		cc.GameState = "unknown"
+		return cc.GameState
+	}
+	if state == "" {
+		cc.GameState = "ongoing"
+		return cc.GameState
 	}
 	cc.GameState = state
 	return cc.GameState
@@ -542,11 +548,11 @@ func (cc *Chesscom) GetGameState() string {
 
 // not yet implemented
 func (cc *Chesscom) NewOpponent() error {
-	new_opponent, err := cc.Driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[5]/div/a[1]`) // New opponent
+	new_opponent, err := cc.Driver.FindElements(selenium.ByClassName, "game-over-buttons-button")
 	if err != nil {
 		return err
 	}
-	new_opponent.Click()
+	new_opponent[0].Click()
 	return nil
 }
 
