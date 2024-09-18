@@ -14,7 +14,7 @@ func main() {
 			log.Fatal(err)
 		}
 	*/
-	cc, err := chesscom.New("1+1")
+	cc, err := chesscom.New("3+2")
 	if err != nil {
 		log.Fatal(err)
 	}

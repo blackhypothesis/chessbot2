@@ -87,6 +87,7 @@ func (cb ChessBot) TestRun() {
 
 		// get closure functions
 		updateMoveList := cb.co.UpdateMoveList()
+		// playMove, err := cb.co.PlayMoveWithMouse()
 
 		if err != nil {
 			log.Fatal(err)
@@ -95,7 +96,22 @@ func (cb ChessBot) TestRun() {
 		for {
 			cb.co.NewGame()
 			updateMoveList()
-			time.Sleep(2 * time.Second)
+
+			if cb.co.IsMyTurn(cb.co.GetPlayWithWhite()) {
+				err := cb.co.CalculateEngineBestMove()
+				if err != nil {
+					log.Println("Can't get best move from engine: ", err)
+				} else {
+					err := cb.co.CalculateTimeLeftSeconds()
+					if err != nil {
+						log.Println("Can't get time left")
+					}
+					if len(cb.co.GetMoveList()) > -1 {
+						// playMove(cb.co.GetBestMove(), len(cb.co.GetMoveList()), cb.co.GetTimeLeftSeconds())
+						cb.co.PrintSearchResults()
+					}
+				}
+			}
 		}
 	}
 }

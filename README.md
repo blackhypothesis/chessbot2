@@ -74,3 +74,14 @@ p[0].innerHTML
 p[1].innerHTML
 '<img alt="Guest6542920377" src="https://www.chess.com/bundles/web/images/black_400.png" width="40" height="40"> <div class="presence-square-component"><div class="presence-square-square" style="width: 1rem; height: 1rem;"></div></div> '
 ```
+
+## Game State
+```
+game_state = document.getElementsByClassName("header-title-component")
+game_state[0].textContent
+'You Won!'
+
+reason = document.getElementsByClassName("header-subtitle-first-line")
+reason[0].textContent
+'on time'
+```

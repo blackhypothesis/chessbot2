@@ -247,6 +247,7 @@ func (cc *Chesscom) IsPlayWithWhite() {
 	}
 }
 
+// TODO improve performance of algorythm
 func (cc *Chesscom) UpdateMoveList() func() {
 	defer TimeTrack(time.Now())
 
@@ -303,8 +304,6 @@ func (cc *Chesscom) UpdateMoveList() func() {
 				}
 			}
 			move_list = append(move_list, figurine+move_black_text)
-
-			log.Println("Movelist: ", move_list)
 		}
 		cc.MoveList = move_list
 	}
@@ -371,29 +370,37 @@ func (cc *Chesscom) CalculateEngineBestMove() error {
 	return nil
 }
 
+// implemented but not tested
 func (cc *Chesscom) CalculateTimeLeftSeconds() error {
-	time_left, err := cc.Driver.FindElements(selenium.ByClassName, "time")
+	err := cc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+		clocks, _ := cc.Driver.FindElements(selenium.ByClassName, "clock-time-monospace")
+		if clocks != nil {
+			return clocks[0].IsDisplayed()
+		}
+		return false, nil
+	}, 1500*time.Millisecond)
 	if err != nil {
 		return err
 	}
-	// sometimes it crashe, because of:
-	//   panic: runtime error: index out of range [0] with length 0
-	// therefore check if len is 2
-	if len(time_left) == 2 {
-		time_opponent, _ := time_left[0].Text()
-		time_self, _ := time_left[1].Text()
-		time_opponent_minutes_seconds := strings.Split(strings.Replace(time_opponent, "\n", "", -1), ":")
-		time_self_minutes_seconds := strings.Split(strings.Replace(time_self, "\n", "", -1), ":")
-
-		time_opponent_minutes, _ := strconv.Atoi(time_opponent_minutes_seconds[0])
-		time_opponent_seconds, _ := strconv.Atoi(time_opponent_minutes_seconds[1])
-		time_self_minutes, _ := strconv.Atoi(time_self_minutes_seconds[0])
-		time_self_seconds, _ := strconv.Atoi(time_self_minutes_seconds[1])
-		time_opponent_secs := 60*time_opponent_minutes + time_opponent_seconds
-		time_self_secs := 60*time_self_minutes + time_self_seconds
-
-		cc.TimeLeftSeconds = [2]int{time_self_secs, time_opponent_secs}
+	clocks, err := cc.Driver.FindElements(selenium.ByClassName, "clock-time-monospace")
+	if err != nil {
+		return err
 	}
+
+	time_opponent, _ := clocks[0].Text()
+	time_self, _ := clocks[1].Text()
+	time_opponent_minutes_seconds := strings.Split(strings.Replace(time_opponent, "\n", "", -1), ":")
+	time_self_minutes_seconds := strings.Split(strings.Replace(time_self, "\n", "", -1), ":")
+
+	time_opponent_minutes, _ := strconv.Atoi(time_opponent_minutes_seconds[0])
+	time_opponent_seconds, _ := strconv.Atoi(time_opponent_minutes_seconds[1])
+	time_self_minutes, _ := strconv.Atoi(time_self_minutes_seconds[0])
+	time_self_seconds, _ := strconv.Atoi(time_self_minutes_seconds[1])
+	time_opponent_secs := 60*time_opponent_minutes + time_opponent_seconds
+	time_self_secs := 60*time_self_minutes + time_self_seconds
+
+	cc.TimeLeftSeconds = [2]int{time_self_secs, time_opponent_secs}
+
 	return nil
 }
 
@@ -411,6 +418,7 @@ func (cc *Chesscom) PrintSearchResults() {
 	log.Println("---------------------------------------------------------------------------------------------------------")
 }
 
+// not yet implemented
 func (cc *Chesscom) PlayMoveWithMouse() (func(move string, len_move_list int, time_left_seconds [2]int), error) {
 	defer TimeTrack(time.Now())
 	cg_board, err := cc.Driver.FindElement(selenium.ByTagName, "cg-board")
@@ -518,6 +526,7 @@ func (cc *Chesscom) PlayMoveWithMouse() (func(move string, len_move_list int, ti
 	}, nil
 }
 
+// not yet implemented
 func (cc *Chesscom) GetGameState() string {
 	game_state, err := cc.Driver.FindElement(selenium.ByClassName, "result")
 	if err != nil {
@@ -531,6 +540,7 @@ func (cc *Chesscom) GetGameState() string {
 	return cc.GameState
 }
 
+// not yet implemented
 func (cc *Chesscom) NewOpponent() error {
 	new_opponent, err := cc.Driver.FindElement(selenium.ByXPATH, `//*[@id="main-wrap"]/main/div[1]/div[5]/div/a[1]`) // New opponent
 	if err != nil {
