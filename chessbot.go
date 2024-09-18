@@ -68,3 +68,34 @@ func (cb ChessBot) Run() {
 		}
 	}
 }
+
+func (cb ChessBot) TestRun() {
+	err := cb.co.ConnectToSite()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cb.co.ServiceStop()
+
+	err = cb.co.PlayWithHuman()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		cb.co.IsPlayWithWhite()
+		log.Printf("IsPlayWithWhite: %v", cb.co.GetPlayWithWhite())
+
+		// get closure functions
+		updateMoveList := cb.co.UpdateMoveList()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for {
+			cb.co.NewGame()
+			updateMoveList()
+			time.Sleep(2 * time.Second)
+		}
+	}
+}

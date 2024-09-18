@@ -20,5 +20,5 @@ func main() {
 	}
 
 	chess_bot := NewChessBot(cc)
-	chess_bot.Run()
+	chess_bot.TestRun()
 }

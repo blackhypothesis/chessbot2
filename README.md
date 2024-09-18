@@ -59,6 +59,7 @@ move = move_list[0].getElementsByClassName("main-line-ply")
 ```
 
 ## clocks
+used to check if playing with white or black
 ```
 c = document.getElementsByClassName("clock-time-monospace")
 ```

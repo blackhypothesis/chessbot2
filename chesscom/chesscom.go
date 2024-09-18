@@ -209,56 +209,103 @@ func (cc *Chesscom) NewGame() {
 }
 
 func (cc *Chesscom) IsPlayWithWhite() {
-	// get
-	err := cc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
-		player_avatars, _ := cc.Driver.FindElements(selenium.ByClassName, "player-avatar")
-		if player_avatars != nil {
-			return player_avatars[0].IsDisplayed()
+	for {
+		// get clocks
+		// since there was no webelement to hint if to play with white or black:
+		// get the time from both players. if the seconds differ from 0, then the clock has started.
+		// this means, that the player with this clock (bottom or top) has white.
+		err := cc.Driver.WaitWithTimeout(func(driver selenium.WebDriver) (bool, error) {
+			clocks, _ := cc.Driver.FindElements(selenium.ByClassName, "clock-time-monospace")
+			if clocks != nil {
+				return clocks[0].IsDisplayed()
+			}
+			return false, nil
+		}, 1500*time.Millisecond)
+		if err != nil {
+			continue
 		}
-		return false, nil
-	}, 20*time.Second)
-	if err != nil {
-		log.Fatal("Cant get player-avatar: ", err)
-	}
-	player_avatars, err := cc.Driver.FindElements(selenium.ByClassName, "player-avatar")
-	if err != nil {
-		log.Fatal("Cant get player-avatar: ", err)
-	}
+		clocks, err := cc.Driver.FindElements(selenium.ByClassName, "clock-time-monospace")
+		if err != nil {
+			continue
+		}
+		time_opponent, _ := clocks[0].Text()
+		time_self, _ := clocks[1].Text()
+		time_opponent_minutes_seconds := strings.Split(strings.Replace(time_opponent, "\n", "", -1), ":")
+		time_self_minutes_seconds := strings.Split(strings.Replace(time_self, "\n", "", -1), ":")
 
-	player_top, err := player_avatars[0].Text()
-	if err != nil {
-		log.Fatal("Player top: ", err)
-	}
-	player_bottom, err := player_avatars[1].Text()
-	if err != nil {
-		log.Fatal("Player bottom: ", err)
-	}
-	log.Println(player_top, player_bottom)
+		time_opponent_seconds, _ := strconv.Atoi(time_opponent_minutes_seconds[1])
+		time_self_seconds, _ := strconv.Atoi(time_self_minutes_seconds[1])
 
-	cc.PlayWithWhite = false
+		if time_opponent_seconds != 0 {
+			cc.PlayWithWhite = false
+			break
+		}
+		if time_self_seconds != 0 {
+			cc.PlayWithWhite = true
+			break
+		}
+	}
 }
 
 func (cc *Chesscom) UpdateMoveList() func() {
 	defer TimeTrack(time.Now())
-	move_list := []string{}
-	last_move_list_len := 0
 
 	return func() {
-		move_list_container, err := cc.Driver.FindElements(selenium.ByTagName, "kwdb")
+		move_list_container, err := cc.Driver.FindElements(selenium.ByClassName, "main-line-row")
 		if err != nil {
 			log.Println("Can't get move list container")
 		}
-		move_list_container_len := len(move_list_container)
-		number_new_moves := move_list_container_len - last_move_list_len
-		for move_index := number_new_moves; move_index > 0; move_index-- {
-			move_element := move_list_container[len(move_list_container)-move_index]
-			move, err := move_element.Text()
+		move_list := []string{}
+		figurine := ""
+		for _, move := range move_list_container {
+			move_white_container, err := move.FindElement(selenium.ByClassName, "white-move")
 			if err != nil {
-				log.Println("Can't decode move: move index: ", move_index)
+				continue
 			}
-			move_list = append(move_list, move)
+			move_white, err := move_white_container.FindElement(selenium.ByClassName, "node-highlight-content")
+			if err != nil {
+				continue
+			}
+			move_white_text, err := move_white.Text()
+			if err != nil {
+				continue
+			}
+			move_figurine_white, err := move_white.FindElement(selenium.ByClassName, "icon-font-chess")
+			if err != nil {
+				figurine = ""
+			} else {
+				figurine, err = move_figurine_white.GetAttribute("data-figurine")
+				if err != nil {
+					figurine = ""
+				}
+			}
+			move_list = append(move_list, figurine+move_white_text)
+
+			move_black_container, err := move.FindElement(selenium.ByClassName, "black-move")
+			if err != nil {
+				break
+			}
+			move_black, err := move_black_container.FindElement(selenium.ByClassName, "node-highlight-content")
+			if err != nil {
+				break
+			}
+			move_black_text, err := move_black.Text()
+			if err != nil {
+				break
+			}
+			move_figurine_black, err := move_black.FindElement(selenium.ByClassName, "icon-font-chess")
+			if err != nil {
+				figurine = ""
+			} else {
+				figurine, err = move_figurine_black.GetAttribute("data-figurine")
+				if err != nil {
+					figurine = ""
+				}
+			}
+			move_list = append(move_list, figurine+move_black_text)
+
+			log.Println("Movelist: ", move_list)
 		}
-		last_move_list_len = len(move_list)
 		cc.MoveList = move_list
 	}
 }
