@@ -86,7 +86,7 @@ func (cb ChessBot) TestRun() {
 
 		// get closure functions
 		updateMoveList := cb.co.UpdateMoveList()
-		// playMove, err := cb.co.PlayMoveWithMouse()
+		playMove, err := cb.co.PlayMoveWithMouse()
 
 		if err != nil {
 			log.Fatal(err)
@@ -106,7 +106,7 @@ func (cb ChessBot) TestRun() {
 						log.Println("Can't get time left")
 					}
 					if len(cb.co.GetMoveList()) > -1 {
-						// playMove(cb.co.GetBestMove(), len(cb.co.GetMoveList()), cb.co.GetTimeLeftSeconds())
+						playMove(cb.co.GetBestMove(), len(cb.co.GetMoveList()), cb.co.GetTimeLeftSeconds())
 						cb.co.PrintSearchResults()
 					}
 				}

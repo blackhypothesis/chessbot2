@@ -511,6 +511,7 @@ func (lc *Lichess) SaveGame() {
 	lc.Game.AddTagPair("Date", time.Now().Format("2006-01-02 15:04:05"))
 	lc.Game.AddTagPair("Round", strconv.Itoa(lc.NumberOfGames))
 	lc.Game.AddTagPair("TimeControl", lc.TimeControl)
+	lc.Game.AddTagPair("Event", "Lichess")
 	for _, move := range lc.MoveList {
 		if err := lc.Game.MoveStr(move); err != nil {
 			log.Println("Loading moves: ", err)

@@ -19,7 +19,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	li_chess := false
+	li_chess := true
 
 	if li_chess {
 		chess_bot := NewChessBot(lc)

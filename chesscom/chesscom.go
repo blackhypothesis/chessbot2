@@ -418,10 +418,9 @@ func (cc *Chesscom) PrintSearchResults() {
 	log.Println("---------------------------------------------------------------------------------------------------------")
 }
 
-// not yet implemented
 func (cc *Chesscom) PlayMoveWithMouse() (func(move string, len_move_list int, time_left_seconds [2]int), error) {
 	defer TimeTrack(time.Now())
-	cg_board, err := cc.Driver.FindElement(selenium.ByTagName, "cg-board")
+	board_single, err := cc.Driver.FindElement(selenium.ByID, "board-single")
 	if err != nil {
 		return nil, err
 	}
@@ -429,13 +428,13 @@ func (cc *Chesscom) PlayMoveWithMouse() (func(move string, len_move_list int, ti
 
 	// get board size
 	board_size := new(selenium.Size)
-	board_size, err = cg_board.Size()
+	board_size, err = board_single.Size()
 	if err != nil {
 		return nil, err
 	}
 	// get board location
 	board_location := new(selenium.Point)
-	board_location, err = cg_board.Location()
+	board_location, err = board_single.Location()
 	if err != nil {
 		return nil, err
 	}
