@@ -1,6 +1,6 @@
 package main
 
-type chessOnline interface {
+type ChessOnline interface {
 	ConnectToSite() error
 	ServiceStop()
 	SignIn() error

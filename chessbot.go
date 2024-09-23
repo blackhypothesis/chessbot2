@@ -6,10 +6,10 @@ import (
 )
 
 type ChessBot struct {
-	co chessOnline
+	co ChessOnline
 }
 
-func NewChessBot(co chessOnline) *ChessBot {
+func NewChessBot(co ChessOnline) *ChessBot {
 	return &ChessBot{co: co}
 }
 

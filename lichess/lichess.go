@@ -6,24 +6,17 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
+	hf "github.com/blackhypothesis/chessbot2/helperfunc"
 	"github.com/go-vgo/robotgo"
-	"github.com/joho/godotenv"
 	"github.com/notnil/chess"
 	"github.com/notnil/chess/uci"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
 )
-
-type envVAR struct {
-	Login    string
-	Password string
-}
 
 type Lichess struct {
 	Url             string
@@ -42,12 +35,12 @@ type Lichess struct {
 }
 
 func New(time_control string) (*Lichess, error) {
-	env, err := getENV()
+	env, err := hf.GetENV()
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
 	return &Lichess{
-		Url:         "https://lichess.org",
+		Url:         "lichess.org",
 		UserName:    env.Login,
 		Password:    env.Password,
 		TimeControl: time_control,
@@ -58,6 +51,8 @@ func New(time_control string) (*Lichess, error) {
  * START implementation of interface chessOnline
  */
 func (lc *Lichess) ConnectToSite() error {
+	hf.ValidateSSLCert(lc.Url)
+
 	service, err := selenium.NewChromeDriverService("./chromedriver-linux64/chromedriver", 4444)
 	if err != nil {
 		return err
@@ -81,8 +76,8 @@ func (lc *Lichess) ConnectToSite() error {
 		return err
 	}
 
-	log.Println("Connecting to: ", lc.Url)
-	err = driver.Get(lc.Url)
+	log.Println("Connecting to: ", "https://"+lc.Url)
+	err = driver.Get("https://" + lc.Url)
 	if err != nil {
 		return err
 	}
@@ -251,7 +246,7 @@ func (lc *Lichess) IsPlayWithWhite() {
 }
 
 func (lc *Lichess) UpdateMoveList() func() {
-	defer TimeTrack(time.Now())
+	defer hf.TimeTrack(time.Now())
 	move_list := []string{}
 	last_move_list_len := 0
 
@@ -351,16 +346,16 @@ func (lc *Lichess) PrintSearchResults() {
 }
 
 func (lc *Lichess) CalculateTimeLeftSeconds() error {
-	time_left, err := lc.Driver.FindElements(selenium.ByClassName, "time")
+	clocks, err := lc.Driver.FindElements(selenium.ByClassName, "time")
 	if err != nil {
 		return err
 	}
 	// sometimes it crashes, because of:
 	//   panic: runtime error: index out of range [0] with length 0
 	// therefore check if len is 2
-	if len(time_left) == 2 {
-		time_opponent, _ := time_left[0].Text()
-		time_self, _ := time_left[1].Text()
+	if len(clocks) == 2 {
+		time_opponent, _ := clocks[0].Text()
+		time_self, _ := clocks[1].Text()
 		time_opponent_minutes_seconds := strings.Split(strings.Replace(time_opponent, "\n", "", -1), ":")
 		time_self_minutes_seconds := strings.Split(strings.Replace(time_self, "\n", "", -1), ":")
 
@@ -377,7 +372,8 @@ func (lc *Lichess) CalculateTimeLeftSeconds() error {
 }
 
 func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, time_left_seconds [2]int), error) {
-	defer TimeTrack(time.Now())
+	defer hf.TimeTrack(time.Now())
+
 	cg_board, err := lc.Driver.FindElement(selenium.ByTagName, "cg-board")
 	if err != nil {
 		return nil, err
@@ -428,7 +424,7 @@ func (lc *Lichess) PlayMoveWithMouse() (func(move string, len_move_list int, tim
 			Y: y_offset + board_location.Y + (7-piece_end.Y)*field_size.Height + field_size.Height/2,
 		}
 
-		// waitToPlayMove(len_move_list, time_left_seconds)
+		// hf.WaitToPlayMove(len_move_list, time_left_seconds)
 		log.Printf("Play move: %s\n", move)
 
 		// move with drag and drop and with clicks
@@ -570,64 +566,4 @@ func getCoordinate(x string) int {
 		return 7
 	}
 	return 0
-}
-
-func getENV() (envVAR, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return envVAR{}, err
-	}
-	login := os.Getenv("LOGIN")
-	if login == "" {
-		return envVAR{}, errors.New("LOGIN is not found in the ENV")
-	}
-	password := os.Getenv("PASSWORD")
-	if password == "" {
-		return envVAR{}, errors.New("PASSWORD is not found in the ENV")
-	}
-
-	return envVAR{Login: login, Password: password}, nil
-}
-
-func waitToPlayMove(len_move_list int, time_left_seconds [2]int) {
-	// artificially wait for some time to get higher standarddeviation of move time usage
-	min_wait_seconds := 0.5
-	max_wait_seconds := 10.0
-
-	max_wait_secs := 0.0
-	// do not spend too much time in the first 6 moves
-	if len_move_list < 12 {
-		max_wait_secs = 2.0
-	} else {
-		// play faster when the time left to play is lower
-		// keep 15 seconds as reserve
-		max_wait_secs = float64(time_left_seconds[0]-15) / 10
-		if max_wait_secs < 0.8 {
-			max_wait_secs = 0.8
-		}
-	}
-	if max_wait_secs > max_wait_seconds {
-		max_wait_secs = max_wait_seconds
-	}
-	wait_seconds := min_wait_seconds + rand.Float64()*(max_wait_secs-min_wait_seconds)
-	log.Printf("Waiting for %f seconds ...\n", wait_seconds)
-	time.Sleep(time.Duration(wait_seconds) * time.Second)
-
-}
-
-// for performance mesurement
-func TimeTrack(start time.Time) {
-	elapsed := time.Since(start)
-
-	// Skip this function, and fetch the PC and file for its parent.
-	pc, _, _, _ := runtime.Caller(1)
-
-	// Retrieve a function object this functions parent.
-	funcObj := runtime.FuncForPC(pc)
-
-	// Regex to extract just the function name (and not the module path).
-	runtimeFunc := regexp.MustCompile(`^.*\.(.*)$`)
-	name := runtimeFunc.ReplaceAllString(funcObj.Name(), "$1")
-
-	log.Printf("%s took %s", name, elapsed)
 }

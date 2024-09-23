@@ -1,6 +1,7 @@
 package helperfunc
 
 import (
+	"crypto/tls"
 	"errors"
 	"log"
 	"math/rand/v2"
@@ -17,7 +18,24 @@ type envVAR struct {
 	Password string
 }
 
-func getENV() (envVAR, error) {
+func ValidateSSLCert(url string) {
+	conn, err := tls.Dial("tcp", url+":443", nil)
+	if err != nil {
+		log.Fatal("Server does not support SSL certificate. Error: ", err)
+	}
+
+	err = conn.VerifyHostname(url)
+	if err != nil {
+		log.Fatal("Hostname doesn't match with certificate: ", err)
+	}
+
+	expiry := conn.ConnectionState().PeerCertificates[0].NotAfter
+	log.Printf("URL: %s", url)
+	log.Printf("Issuer: %s\n", conn.ConnectionState().PeerCertificates[0].Issuer)
+	log.Printf("Expiry: %v\n", expiry.Format(time.RFC850))
+}
+
+func GetENV() (envVAR, error) {
 	err := godotenv.Load()
 	if err != nil {
 		return envVAR{}, err
@@ -34,7 +52,7 @@ func getENV() (envVAR, error) {
 	return envVAR{Login: login, Password: password}, nil
 }
 
-func waitToPlayMove(len_move_list int, time_left_seconds [2]int) {
+func WaitToPlayMove(len_move_list int, time_left_seconds [2]int) {
 	// artificially wait for some time to get higher standarddeviation of move time usage
 	min_wait_seconds := 0.5
 	max_wait_seconds := 10.0
